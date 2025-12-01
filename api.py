@@ -49,7 +49,7 @@ print("Loading models and data...")
 ensemble_models = []
 for i in range(1, 6):
     model_path = f"models/lstm_model_{i}.keras"
-    model = tf.keras.models.load_model(model_path)
+    model = tf_keras.models.load_model(model_path)
     ensemble_models.append(model)
     print(f"✓ Loaded model {i}/5")
 
