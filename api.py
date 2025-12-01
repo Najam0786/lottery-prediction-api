@@ -10,8 +10,9 @@ import pickle
 from datetime import datetime
 import requests
 import os
-os.environ['TF_USE_LEGACY_KERAS'] = '1'
 import tensorflow as tf
+import tf_keras
+
 
 
 print("✓ Imports loaded")
