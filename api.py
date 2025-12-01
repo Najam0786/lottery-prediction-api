@@ -7,9 +7,12 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 import numpy as np
 import pickle
-import tensorflow as tf
 from datetime import datetime
 import requests
+import os
+os.environ['TF_USE_LEGACY_KERAS'] = '1'
+import tensorflow as tf
+
 
 print("✓ Imports loaded")
 
