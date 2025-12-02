@@ -19,5 +19,24 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Don't ignore models folder - we need it!
-# models/  <- DO NOT add this line
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Virtual environments
+ENV/
+env.bak/
+venv.bak/
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.temp
+
+# Models folder - IMPORTANT: DO NOT IGNORE!
+# !models/           # Don't uncomment this - models folder should be tracked
+# !models/*.keras    # Don't uncomment this - model files should be tracked
+# !models/*.pkl      # Don't uncomment this - data files should be tracked
