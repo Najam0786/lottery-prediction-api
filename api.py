@@ -242,7 +242,12 @@ class PredictionResponse(BaseModel):
     combinations: List[List[int]]
     metadata: Dict[str, Any]
 
-print("✓ Response models defined")
+# Request model for user-facing endpoint
+class UserPredictionRequest(BaseModel):
+    top_n: int = 15
+    n_combinations: int = 10
+
+print(" Response models defined")
 
 # API Endpoints
 
@@ -269,10 +274,11 @@ async def root():
             "openapi_json": "/openapi.json"
         },
         "endpoints": {
-            "/predict": "Get lottery number predictions",
+            "/predict": "Get lottery number predictions (GET)",
+            "/user/predict": "User-facing predictions (POST) - for mobile/web apps",
             "/health": "Health check",
-            "/docs": "Interactive API documentation (Swagger UI)",
-            "/redoc": "Alternative API documentation"
+            "/admin/retrain": "Trigger data refresh (POST)",
+            "/docs": "Interactive API documentation (Swagger UI)"
         }
     }
 
@@ -411,8 +417,24 @@ async def admin_retrain():
         print(f"Admin retrain error: {e}")
         raise HTTPException(status_code=500, detail=f"Retrain failed: {str(e)}")
 
-print("✓ Admin endpoint defined")
-print("\n🎉 API is ready!")
+print(" Admin endpoint defined")
+
+@app.post("/user/predict", response_model=PredictionResponse)
+async def user_predict(body: UserPredictionRequest):
+    """
+    User-facing prediction endpoint (for mobile/web apps).
+    Validates input and returns lottery predictions.
+    """
+    # Input validation
+    if body.top_n <= 0 or body.top_n > 49:
+        raise HTTPException(status_code=400, detail="top_n must be between 1 and 49")
+    if body.n_combinations <= 0 or body.n_combinations > 100:
+        raise HTTPException(status_code=400, detail="n_combinations must be between 1 and 100")
+    
+    # Call the existing prediction logic directly
+    return await predict_lottery(top_n=body.top_n, n_combinations=body.n_combinations)
+
+print(" User endpoint defined")
 
 # Run the server
 if __name__ == "__main__":

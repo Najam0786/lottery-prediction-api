@@ -90,14 +90,15 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 
 <div align="center">
 
-| Endpoint | URL | Description |
-|:--------:|:---:|:-----------:|
-| **Base URL** | [`https://web-production-09cd3.up.railway.app`](https://web-production-09cd3.up.railway.app) | API Root |
-| **Predictions** | [`/predict`](https://web-production-09cd3.up.railway.app/predict) | Get lottery predictions |
-| **Health Check** | [`/health`](https://web-production-09cd3.up.railway.app/health) | Service status |
-| **Swagger UI** | [`/docs`](https://web-production-09cd3.up.railway.app/docs) | Interactive documentation |
-| **ReDoc** | [`/redoc`](https://web-production-09cd3.up.railway.app/redoc) | Alternative documentation |
-| **OpenAPI** | [`/openapi.json`](https://web-production-09cd3.up.railway.app/openapi.json) | OpenAPI specification |
+| Endpoint | Method | URL | Description |
+|:--------:|:------:|:---:|:-----------:|
+| **Base URL** | GET | [`https://web-production-09cd3.up.railway.app`](https://web-production-09cd3.up.railway.app) | API Root |
+| **Predictions** | GET | [`/predict`](https://web-production-09cd3.up.railway.app/predict) | Get lottery predictions (query params) |
+| **User Predictions** | POST | [`/user/predict`](https://web-production-09cd3.up.railway.app/docs#/default/user_predict_user_predict_post) | Get predictions (JSON body) - for apps |
+| **Health Check** | GET | [`/health`](https://web-production-09cd3.up.railway.app/health) | Service status |
+| **Admin Retrain** | POST | [`/admin/retrain`](https://web-production-09cd3.up.railway.app/docs#/default/admin_retrain_admin_retrain_post) | Trigger data refresh |
+| **Swagger UI** | GET | [`/docs`](https://web-production-09cd3.up.railway.app/docs) | Interactive documentation |
+| **OpenAPI** | GET | [`/openapi.json`](https://web-production-09cd3.up.railway.app/openapi.json) | OpenAPI specification |
 
 </div>
 
@@ -695,6 +696,85 @@ curl "https://web-production-09cd3.up.railway.app/predict?top_n=10&n_combination
       "n_combinations": 5
     }
   }
+}
+```
+
+</details>
+
+<br>
+
+### `POST /user/predict`
+
+User-facing prediction endpoint for mobile and web applications. Accepts JSON body instead of query parameters.
+
+#### Request Body
+
+```json
+{
+  "top_n": 10,
+  "n_combinations": 5
+}
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `top_n` | integer | 15 | Number of top predictions (1-49) |
+| `n_combinations` | integer | 10 | Number of combinations (1-100) |
+
+#### Example Request
+
+```bash
+curl -X POST "https://web-production-09cd3.up.railway.app/user/predict" \
+  -H "Content-Type: application/json" \
+  -d '{"top_n": 10, "n_combinations": 5}'
+```
+
+<details>
+<summary><b>Response Example</b></summary>
+
+```json
+{
+  "top_numbers": [
+    {"number": 23, "score": 0.0847, "lstm_score": 0.0312, "stat_score": 0.1523},
+    {"number": 7, "score": 0.0789, "lstm_score": 0.0298, "stat_score": 0.1412}
+  ],
+  "combinations": [
+    [7, 14, 23, 31, 38, 45],
+    [3, 12, 23, 28, 35, 47]
+  ],
+  "metadata": {
+    "model_type": "Bidirectional LSTM + Statistical Ensemble",
+    "ensemble_models": 5,
+    "accuracy": "87.76%",
+    "timestamp": "2025-12-11T12:00:00.000000",
+    "parameters": {"top_n": 10, "n_combinations": 5}
+  }
+}
+```
+
+</details>
+
+<br>
+
+### `POST /admin/retrain`
+
+Trigger data refresh and recompute statistical scores. Used by the orchestrator for automated updates.
+
+#### Example Request
+
+```bash
+curl -X POST "https://web-production-09cd3.up.railway.app/admin/retrain"
+```
+
+<details>
+<summary><b>Response Example</b></summary>
+
+```json
+{
+  "status": "ok",
+  "message": "Data refreshed and statistical scores recomputed",
+  "draws_loaded": 1847,
+  "timestamp": "2025-12-11T12:00:00.000000"
 }
 ```
 
