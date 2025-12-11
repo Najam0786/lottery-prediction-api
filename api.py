@@ -396,11 +396,7 @@ async def admin_retrain():
             print(f"✓ Reloaded statistical data: {binary_dataset.shape[0]} draws")
         except Exception as e:
             print(f"⚠️ Could not reload pickle file: {e}")
-            # Recompute statistical scores from existing data
-            if binary_dataset is not None:
-                statistical_scores = calculate_frequency_scores(binary_dataset, recent_window=100)
-                print("✓ Recomputed statistical scores from existing data")
-            else:
+            if binary_dataset is None:
                 raise Exception("No data available to refresh")
         
         # 2. Recompute statistical scores with latest data
@@ -425,6 +421,8 @@ async def user_predict(body: UserPredictionRequest):
     User-facing prediction endpoint (for mobile/web apps).
     Validates input and returns lottery predictions.
     """
+    print(f"📱 /user/predict called - top_n={body.top_n}, n_combinations={body.n_combinations}")
+    
     # Input validation
     if body.top_n <= 0 or body.top_n > 49:
         raise HTTPException(status_code=400, detail="top_n must be between 1 and 49")
