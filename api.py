@@ -369,6 +369,49 @@ async def predict_lottery(top_n: int = 15, n_combinations: int = 10):
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 print("✓ Prediction endpoint defined")
+
+@app.post("/admin/retrain")
+async def admin_retrain():
+    """
+    Trigger data refresh / retraining.
+    Reloads statistical data and recomputes scores.
+    """
+    global binary_dataset, statistical_scores, stats_data, config
+    
+    try:
+        print("🔁 /admin/retrain called - starting refresh workflow...")
+        
+        # 1. Reload statistical data from pickle file
+        try:
+            stats_data = load_pickle_compat("models/statistical_data.pkl")
+            binary_dataset = stats_data['binary_dataset']
+            statistical_scores = stats_data['statistical_scores']
+            config = stats_data['config']
+            print(f"✓ Reloaded statistical data: {binary_dataset.shape[0]} draws")
+        except Exception as e:
+            print(f"⚠️ Could not reload pickle file: {e}")
+            # Recompute statistical scores from existing data
+            if binary_dataset is not None:
+                statistical_scores = calculate_frequency_scores(binary_dataset, recent_window=100)
+                print("✓ Recomputed statistical scores from existing data")
+            else:
+                raise Exception("No data available to refresh")
+        
+        # 2. Recompute statistical scores with latest data
+        statistical_scores = calculate_frequency_scores(binary_dataset, recent_window=100)
+        print("✓ Statistical scores recomputed")
+
+        return {
+            "status": "ok",
+            "message": "Data refreshed and statistical scores recomputed",
+            "draws_loaded": int(binary_dataset.shape[0]) if binary_dataset is not None else 0,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        print(f"Admin retrain error: {e}")
+        raise HTTPException(status_code=500, detail=f"Retrain failed: {str(e)}")
+
+print("✓ Admin endpoint defined")
 print("\n🎉 API is ready!")
 
 # Run the server

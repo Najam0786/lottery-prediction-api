@@ -115,6 +115,7 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 - [About The Project](#-about-the-project)
 - [Live API Endpoints](#-live-api-endpoints)
 - [System Architecture](#-system-architecture)
+- [Data Refresh System (Orchestrator)](#-data-refresh-system-orchestrator)
 - [How It Works](#-how-it-works)
 - [Model Deep Dive](#-model-deep-dive)
 - [Technology Stack](#-technology-stack)
@@ -181,7 +182,98 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 
 <br>
 
-## 🔬 How It Works
+## � Data Refresh System (Orchestrator)
+
+The system includes an **automated data refresh mechanism** that keeps predictions up-to-date with the latest lottery draws.
+
+### Why We Built This
+
+- **Fresh Predictions**: Lottery draws happen 3 times per week (Monday, Thursday, Saturday). Our predictions should reflect the latest data.
+- **Automated Updates**: No manual intervention needed - the orchestrator automatically detects new draws and triggers model refresh.
+- **Separation of Concerns**: Data API (Railway) handles lottery data, Model API (Railway) handles predictions, Orchestrator coordinates both.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATA REFRESH SYSTEM                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────────┐                      ┌──────────────────────────────┐ │
+│  │   ORCHESTRATOR   │                      │         DATA API             │ │
+│  │  orchestrator.py │ ──── GET ──────────▶ │  (Railway - lotto-api)       │ │
+│  │                  │   /sorteos/recientes │  Historical lottery draws    │ │
+│  │  Runs every      │ ◀─── JSON ────────── │                              │ │
+│  │  60 minutes      │                      └──────────────────────────────┘ │
+│  │                  │                                                        │
+│  │  Checks for      │                      ┌──────────────────────────────┐ │
+│  │  new draws       │                      │        MODEL API             │ │
+│  │                  │ ──── POST ─────────▶ │  (Railway - web-production)  │ │
+│  │  Triggers        │   /admin/retrain     │  LSTM + Statistical Models   │ │
+│  │  refresh         │ ◀─── JSON ────────── │                              │ │
+│  └──────────────────┘                      └──────────────────────────────┘ │
+│           │                                                                  │
+│           ▼                                                                  │
+│  ┌──────────────────┐                                                        │
+│  │ last_processed_  │  Tracks the last draw date processed                  │
+│  │ draw.json        │  to avoid duplicate refreshes                         │
+│  └──────────────────┘                                                        │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Update Frequency
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| **Check Interval** | 24 hours | Once daily - sufficient for 3x weekly draws |
+| **Lottery Schedule** | Mon, Thu, Sat | Spanish Lotería Primitiva draw days |
+| **Data Source** | `/sorteos/recientes` | Returns last 14 draws |
+
+### How It Works
+
+1. **Poll Data API**: Every 24 hours, orchestrator calls the Data API to get recent draws
+2. **Compare Dates**: Checks if any draws are newer than `last_processed_draw.json`
+3. **Trigger Refresh**: If new draws found, calls `POST /admin/retrain` on Model API
+4. **Update Tracker**: Saves the newest draw date to prevent duplicate refreshes
+
+### Running the Orchestrator
+
+```bash
+# Run locally
+python orchestrator.py
+
+# Run in background (Linux/Mac)
+nohup python orchestrator.py &
+
+# Run as a service (production)
+# Deploy to Railway/Render as a separate worker process
+```
+
+### Admin Endpoint
+
+The Model API exposes an admin endpoint for manual or automated refresh:
+
+```bash
+# Trigger manual refresh
+curl -X POST https://web-production-09cd3.up.railway.app/admin/retrain
+
+# Response
+{
+  "status": "ok",
+  "message": "Data refreshed and statistical scores recomputed",
+  "draws_loaded": 1847,
+  "timestamp": "2025-12-11T10:30:00.000000"
+}
+```
+
+<br>
+
+---
+
+<br>
+
+## � How It Works
 
 ### The Prediction Pipeline
 
@@ -381,7 +473,8 @@ validation_split = 0.2
 ```
 lottery-prediction-api/
 │
-├── 📄 api.py                    # Main FastAPI application
+├── 📄 api.py                    # Main FastAPI application (Model API)
+├── 📄 orchestrator.py           # Data refresh scheduler (checks every 24 hours)
 │
 ├── 📁 models/                   # Trained ML models
 │   ├── lstm_model_1.keras       # Ensemble model 1 (~3.2 MB)
@@ -392,6 +485,7 @@ lottery-prediction-api/
 │   ├── lottery_lstm_model.keras # Base model (~3.2 MB)
 │   └── statistical_data.pkl     # Historical data + stats (~393 KB)
 │
+├── 📄 last_processed_draw.json  # Tracks last processed draw date (auto-generated)
 ├── 📄 requirements.txt          # Python dependencies
 ├── 📄 runtime.txt               # Python version (Heroku)
 ├── 📄 .python-version           # Python version (Railway/pyenv)
