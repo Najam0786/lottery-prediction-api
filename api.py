@@ -1,7 +1,7 @@
 # api.py
 # FastAPI Backend for Lottery Prediction - COMPLETE WORKING VERSION
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
@@ -190,6 +190,16 @@ app = FastAPI(
     redoc_url="/redoc",         # Explicitly enable ReDoc
     openapi_url="/openapi.json" # Explicitly set OpenAPI URL
 )
+
+# Add cache-busting middleware for documentation
+@app.middleware("http")
+async def add_cache_busting(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # Configure CORS (allow your iOS app to call this API)
 app.add_middleware(
