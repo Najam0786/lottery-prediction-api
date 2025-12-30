@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 import numpy as np
 import pickle
+import csv
 from datetime import datetime
 import os
 import sys
@@ -125,6 +126,68 @@ def create_fresh_statistical_data():
         }
     }
 
+def load_statistical_data_from_csv(csv_path: str):
+    """Load draw history from a CSV file and build binary dataset + statistical scores."""
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(csv_path)
+
+    draws = []
+    with open(csv_path, newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        required = {'fecha', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6'}
+        if not required.issubset(set(reader.fieldnames or [])):
+            raise ValueError(f"CSV missing required columns: {sorted(required)}")
+
+        for row in reader:
+            fecha = (row.get('fecha') or '').strip()
+            if not fecha:
+                continue
+            nums = [int(row[f'N{i}']) for i in range(1, 7)]
+            if any(n < 1 or n > LOTTERY_SIZE for n in nums):
+                continue
+            if len(set(nums)) != 6:
+                continue
+            draws.append((fecha, sorted(nums)))
+
+    if not draws:
+        raise ValueError("No valid draws found in CSV")
+
+    # Ensure chronological order: oldest -> newest
+    draws.sort(key=lambda x: x[0])
+
+    binary_data = np.zeros((len(draws), LOTTERY_SIZE), dtype=np.float32)
+    for i, (_, nums) in enumerate(draws):
+        for n in nums:
+            binary_data[i, n - 1] = 1.0
+
+    recent_window = min(100, int(binary_data.shape[0]))
+    recent_data = binary_data[-recent_window:]
+    frequency_count = recent_data.sum(axis=0)
+    frequency_probs = frequency_count / recent_window
+
+    recency_scores = np.zeros(LOTTERY_SIZE)
+    for num_idx in range(LOTTERY_SIZE):
+        occurrences = np.where(recent_data[:, num_idx] == 1)[0]
+        if len(occurrences) > 0:
+            last_seen = recent_window - occurrences[-1]
+            recency_scores[num_idx] = 1 / (last_seen + 1)
+
+    if recency_scores.max() > 0:
+        recency_scores = recency_scores / recency_scores.max()
+
+    statistical_scores = 0.7 * frequency_probs + 0.3 * recency_scores
+
+    return {
+        'binary_dataset': binary_data,
+        'statistical_scores': statistical_scores,
+        'config': {
+            'lottery_size': LOTTERY_SIZE,
+            'window_length': WINDOW_LENGTH,
+            'n_draws': int(binary_data.shape[0]),
+            'source': os.path.basename(csv_path)
+        }
+    }
+
 def load_models():
     """Load all models with proper error handling"""
     global ensemble_models, binary_dataset, stats_data, config, statistical_scores
@@ -142,22 +205,28 @@ def load_models():
                 print(f"✗ Failed to load model {i}: {e}")
                 raise
         
-        # Load statistical data with pickle compatibility fix
+        # Load statistical data
         try:
-            stats_data = load_pickle_compat("models/statistical_data.pkl")
-            
-            binary_dataset = stats_data['binary_dataset']
-            statistical_scores = stats_data['statistical_scores']
-            config = stats_data['config']
-            
-            print(f"✓ Loaded statistical data: {binary_dataset.shape[0]} draws")
+            # Prefer CSV if present (authoritative updated data)
+            if os.path.exists("historico_clean.csv"):
+                stats_data = load_statistical_data_from_csv("historico_clean.csv")
+                binary_dataset = stats_data['binary_dataset']
+                statistical_scores = stats_data['statistical_scores']
+                config = stats_data['config']
+                print(f"✓ Loaded statistical data from CSV: {binary_dataset.shape[0]} draws")
+            else:
+                stats_data = load_pickle_compat("models/statistical_data.pkl")
+                binary_dataset = stats_data['binary_dataset']
+                statistical_scores = stats_data['statistical_scores']
+                config = stats_data['config']
+                print(f"✓ Loaded statistical data from pickle: {binary_dataset.shape[0]} draws")
+
             print("✓ All models and data loaded!")
-            
+ 
         except Exception as e:
             print(f"✗ Failed to load statistical data: {e}")
-            print("⚠️ Creating fresh statistical data for testing...")
-            
-            # Create fresh data for testing
+            print("⚠️ Falling back to fresh statistical data for testing...")
+ 
             stats_data = create_fresh_statistical_data()
             binary_dataset = stats_data['binary_dataset']
             statistical_scores = stats_data['statistical_scores']

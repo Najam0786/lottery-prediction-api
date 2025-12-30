@@ -17,7 +17,7 @@
 
 <br>
 
-[**🚀 Live Demo**](https://web-production-09cd3.up.railway.app/) · [**📖 API Docs**](https://web-production-09cd3.up.railway.app/docs) · [**🐛 Report Bug**](https://github.com/Najam0786/lottery-prediction-api/issues) · [**✨ Request Feature**](https://github.com/Najam0786/lottery-prediction-api/issues)
+[**🚀 Live Demo**](https://web-production-09cd3.up.railway.app/test-ui) · [**📖 API Docs**](https://web-production-09cd3.up.railway.app/docs) · [**🐛 Report Bug**](https://github.com/Najam0786/lottery-prediction-api/issues) · [**✨ Request Feature**](https://github.com/Najam0786/lottery-prediction-api/issues)
 
 <br>
 
@@ -95,6 +95,8 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 | **Base URL** | GET | [`https://web-production-09cd3.up.railway.app`](https://web-production-09cd3.up.railway.app) | API Root |
 | **Predictions** | GET | [`/predict`](https://web-production-09cd3.up.railway.app/predict) | Get lottery predictions (query params) |
 | **User Predictions** | POST | [`/user/predict`](https://web-production-09cd3.up.railway.app/docs#/default/user_predict_user_predict_post) | Get predictions (JSON body) - for apps |
+| **Score Combinations** | POST | [`/user/score-combinations`](https://web-production-09cd3.up.railway.app/docs#/default/score_user_combinations_user_score_combinations_post) | Score combinations + rational explanation |
+| **Test UI** | GET | [`/test-ui`](https://web-production-09cd3.up.railway.app/test-ui) | Modern dashboard UI (User vs AI + comparison) |
 | **Health Check** | GET | [`/health`](https://web-production-09cd3.up.railway.app/health) | Service status |
 | **Admin Retrain** | POST | [`/admin/retrain`](https://web-production-09cd3.up.railway.app/docs#/default/admin_retrain_admin_retrain_post) | Trigger data refresh |
 | **Swagger UI** | GET | [`/docs`](https://web-production-09cd3.up.railway.app/docs) | Interactive documentation |
@@ -174,7 +176,8 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 │  └──────────────┘    └──────────────────────────────────────────────────┘   │
 │                                                                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Models: lstm_model_[1-5].keras  │  Data: statistical_data.pkl             │
+│  Models: lstm_model_[1-5].keras  │  Data: historico_clean.csv (preferred) │
+│                                  │  Optional: models/statistical_data.pkl │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -184,7 +187,7 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 
 <br>
 
-## � Data Refresh System (Orchestrator)
+## 🔄 Data Refresh System (Orchestrator)
 
 The system includes an **automated data refresh mechanism** that keeps predictions up-to-date with the latest lottery draws.
 
@@ -477,6 +480,8 @@ lottery-prediction-api/
 │
 ├── 📄 api.py                    # Main FastAPI application (Model API)
 ├── 📄 orchestrator.py           # Data refresh scheduler (checks every 24 hours)
+├── 📄 historico_clean.csv        # Historical draw history (preferred source for stats)
+├── 📄 test_ui.html               # Modern dashboard UI (/test-ui)
 │
 ├── 📁 models/                   # Trained ML models
 │   ├── lstm_model_1.keras       # Ensemble model 1 (~3.2 MB)
@@ -485,7 +490,7 @@ lottery-prediction-api/
 │   ├── lstm_model_4.keras       # Ensemble model 4 (~3.2 MB)
 │   ├── lstm_model_5.keras       # Ensemble model 5 (~3.2 MB)
 │   ├── lottery_lstm_model.keras # Base model (~3.2 MB)
-│   └── statistical_data.pkl     # Historical data + stats (~393 KB)
+│   └── statistical_data.pkl     # Optional cached historical data + stats (~393 KB)
 │
 ├── 📄 last_processed_draw.json  # Tracks last processed draw date (auto-generated)
 ├── 📄 requirements.txt          # Python dependencies
@@ -588,6 +593,20 @@ Perfect for iOS, Android, and web applications! Our API is designed with mobile-
 ```
 Production: https://web-production-09cd3.up.railway.app
 Local:      http://localhost:8000
+```
+
+<br>
+
+### `GET /test-ui`
+
+Modern dashboard UI to:
+
+- Enter your combinations
+- Compare against AI combinations
+- View scores + stars + AI insights
+
+```bash
+curl "https://web-production-09cd3.up.railway.app/test-ui"
 ```
 
 ### 📋 Available Endpoints
@@ -759,7 +778,7 @@ struct ScoreResponse: Codable {
 
 <br>
 
-## �📡 API Reference
+## 📚 API Reference
 
 ### Base URL
 

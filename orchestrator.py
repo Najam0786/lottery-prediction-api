@@ -49,9 +49,18 @@ def fetch_new_draws():
             print(f"Local data file {LOCAL_DATA_FILE} not found!")
             return []
         
-        with open(LOCAL_DATA_FILE, "r") as f:
-            data = json.load(f)
-            draws = data.get("draws", [])
+        try:
+            with open(LOCAL_DATA_FILE, "rb") as f:
+                raw = f.read()
+            if b"\x00" in raw:
+                raw = raw.replace(b"\x00", b"")
+            text = raw.decode("utf-8", errors="ignore")
+            data = json.loads(text)
+        except Exception as e:
+            print(f"Error parsing local data file {LOCAL_DATA_FILE}: {e}")
+            return []
+
+        draws = data.get("draws", [])
         
         if not draws:
             print("No draws found in local data file")
