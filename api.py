@@ -184,8 +184,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     title="Lotería Primitiva Prediction API",
-    description="AI-powered lottery number predictions using LSTM + Statistics - Enhanced UI v1.3.0",
-    version="1.3.0",
+    description="AI-powered lottery number predictions using LSTM + Statistics - Modern Dashboard v1.4.0",
+    version="1.4.0",
     docs_url="/docs",           # Explicitly enable Swagger UI
     redoc_url="/redoc",         # Explicitly enable ReDoc
     openapi_url="/openapi.json" # Explicitly set OpenAPI URL
@@ -384,7 +384,7 @@ async def root():
     
     return {
         "name": "Lotería Primitiva Prediction API",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "status": "active",
         "models": models_status,
         "data": data_status,
