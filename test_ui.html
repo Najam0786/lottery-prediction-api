@@ -1081,8 +1081,8 @@
                     throw new Error(data.detail || 'Scoring failed');
                 }
 
-                userScores = data.scored_combinations;
-                displayUserScores(data.scored_combinations);
+                userScores = normalizeAndSortScores(data.scored_combinations || []);
+                displayUserScores(userScores);
                 
                 // Show comparison if AI scores are ready
                 if (aiScores.length > 0) {
@@ -1130,7 +1130,7 @@
                 const scoreData = await scoreResponse.json();
 
                 if (scoreResponse.ok) {
-                    aiScores = (scoreData.scored_combinations || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+                    aiScores = normalizeAndSortScores(scoreData.scored_combinations || []);
                     displayAIScores(aiScores);
                 } else {
                     // Use fallback scores
@@ -1138,7 +1138,8 @@
                         combination: combo,
                         score: 75 + Math.random() * 20,
                         rational: "AI-optimized combination with strong statistical backing"
-                    })).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+                    }));
+                    aiScores = normalizeAndSortScores(aiScores);
                     displayAIScores(aiScores);
                 }
 
@@ -1154,9 +1155,17 @@
                     combination: combo,
                     score: 75 + Math.random() * 20,
                     rational: "AI-optimized combination with strong statistical backing"
-                })).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+                }));
+                aiScores = normalizeAndSortScores(aiScores);
                 displayAIScores(aiScores);
             }
+        }
+
+        function normalizeAndSortScores(scores) {
+            return (scores || []).map((s) => ({
+                ...s,
+                score: Number(s?.score) || 0
+            })).slice().sort((a, b) => b.score - a.score);
         }
 
         function displayUserScores(scores) {
@@ -1326,13 +1335,9 @@
                 return;
             }
 
-            // Find best scores
-            const bestUser = userScores.reduce((best, current) => 
-                current.score > best.score ? current : best
-            );
-            const bestAI = aiScores.reduce((best, current) => 
-                current.score > best.score ? current : best
-            );
+            // Scores are kept sorted descending; best is always first.
+            const bestUser = userScores[0];
+            const bestAI = aiScores[0];
 
             const comparisonSection = document.getElementById('comparison-section');
             const comparisonCards = document.getElementById('comparison-cards');
