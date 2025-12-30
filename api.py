@@ -629,24 +629,35 @@ def score_combination(combination, lstm_scores, stat_scores):
     """Score a single combination and generate rational explanation"""
     try:
         # Get individual scores for each number in the combination
-        individual_combined = []
+        # Inputs are expected to be:
+        # - lstm_scores: normalized LSTM probabilities over 49 numbers (sum=1)
+        # - stat_scores: normalized statistical probabilities over 49 numbers (sum=1)
+        # We combine them and then score by percentile rank to produce a user-friendly 0-100 score.
+        lstm_scores = np.asarray(lstm_scores, dtype=np.float64)
+        stat_scores = np.asarray(stat_scores, dtype=np.float64)
         
+        lstm_norm = lstm_scores / (np.sum(lstm_scores) + 1e-12)
+        stat_norm = stat_scores / (np.sum(stat_scores) + 1e-12)
+        combined = 0.6 * lstm_norm + 0.4 * stat_norm
+
+        order = np.argsort(combined)
+        ranks = np.empty_like(order)
+        ranks[order] = np.arange(len(combined))
+        percentiles = ranks / max(1, (len(combined) - 1))
+
+        individual_percentiles = []
         for num in combination:
-            idx = num - 1  # Convert to 0-based index
-            lstm_score = float(lstm_scores[idx])
-            stat_score = float(stat_scores[idx])
-            combined_score = 0.6 * lstm_score + 0.4 * stat_score
-            individual_combined.append(combined_score)
-        
-        # Calculate overall combination score (average of individual scores)
-        overall_score = np.mean(individual_combined) * 100  # Scale to 0-100
+            idx = num - 1
+            individual_percentiles.append(float(percentiles[idx]))
+
+        overall_score = float(np.mean(individual_percentiles) * 100.0)
         
         # Generate rational explanation
         rational_parts = []
         
-        # Analyze individual number strengths
-        strong_numbers = [f"{num}" for num, score in zip(combination, individual_combined) if score > 0.02]
-        weak_numbers = [f"{num}" for num, score in zip(combination, individual_combined) if score < 0.01]
+        # Analyze individual number strengths (percentile-based)
+        strong_numbers = [f"{num}" for num, p in zip(combination, individual_percentiles) if p >= 0.70]
+        weak_numbers = [f"{num}" for num, p in zip(combination, individual_percentiles) if p <= 0.30]
         
         if strong_numbers:
             rational_parts.append(f"Strong numbers: {', '.join(strong_numbers)} (high LSTM/statistical confidence)")
@@ -696,7 +707,7 @@ def score_combination(combination, lstm_scores, stat_scores):
         rational = " | ".join(rational_parts)
         
         return {
-            'score': round(overall_score, 2),
+            'score': overall_score,
             'rational': rational
         }
         
@@ -747,6 +758,12 @@ async def score_user_combinations(body: CombinationScoreRequest):
         
         # Get statistical scores
         stat_scores = calculate_frequency_scores(binary_dataset, recent_window=100)
+        
+        # Normalize both signals before combination scoring
+        ensemble_pred = np.asarray(ensemble_pred, dtype=np.float64)
+        stat_scores = np.asarray(stat_scores, dtype=np.float64)
+        ensemble_pred = ensemble_pred / (np.sum(ensemble_pred) + 1e-12)
+        stat_scores = stat_scores / (np.sum(stat_scores) + 1e-12)
         
         # Score each combination
         scored_combinations = []
