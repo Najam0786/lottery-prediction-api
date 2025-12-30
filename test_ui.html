@@ -256,6 +256,22 @@
             font-size: 1.8em;
             font-weight: 700;
             color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .score-value.animated {
+            animation: scoreCountUp 1.5s ease-out;
+        }
+        
+        @keyframes scoreCountUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .score-stars {
@@ -266,10 +282,123 @@
         .star {
             color: #ffd700;
             font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+        
+        .star.animated {
+            animation: starSparkle 0.6s ease-out;
+            animation-fill-mode: forwards;
+        }
+        
+        @keyframes starSparkle {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.3) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(360deg);
+                opacity: 1;
+            }
         }
         
         .star.empty {
             color: #ddd;
+        }
+        
+        .personal-best {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+            animation: personalBestPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes personalBestPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
+            }
+        }
+        
+        .ai-insights {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ai-insights:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .ai-insights::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .ai-insights:hover::before {
+            left: 100%;
+        }
+        
+        .insights-content {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .insights-content.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .insight-item {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .insight-item::before {
+            content: '💡';
+            position: absolute;
+            left: 0;
         }
         
         .score-rational {
@@ -511,6 +640,7 @@
                     <h2><i class="fas fa-user"></i> Your Combinations</h2>
                 </div>
                 <div class="panel-content">
+                    <div id="personal-best-container"></div>
                     <div id="combinations-container"></div>
                     
                     <div class="action-buttons">
@@ -557,12 +687,64 @@
         const maxCombinations = 5;
         let userScores = [];
         let aiScores = [];
+        let personalBest = localStorage.getItem('personalBest') ? parseFloat(localStorage.getItem('personalBest')) : 0;
 
         // Initialize the dashboard
         window.onload = function() {
             addCombination();
             loadAICombinations();
+            displayPersonalBest();
         };
+
+        function displayPersonalBest() {
+            const container = document.getElementById('personal-best-container');
+            if (personalBest > 0) {
+                container.innerHTML = `
+                    <div class="personal-best">
+                        <i class="fas fa-trophy"></i> Personal Best: ${personalBest.toFixed(1)}/100
+                    </div>
+                `;
+            }
+        }
+
+        function updatePersonalBest(newScore) {
+            if (newScore > personalBest) {
+                personalBest = newScore;
+                localStorage.setItem('personalBest', personalBest.toString());
+                displayPersonalBest();
+                
+                // Show celebration message
+                const container = document.getElementById('personal-best-container');
+                container.innerHTML = `
+                    <div class="personal-best">
+                        <i class="fas fa-crown"></i> NEW PERSONAL BEST: ${personalBest.toFixed(1)}/100! 🎉
+                    </div>
+                `;
+            }
+        }
+
+        function animateScore(element, targetScore) {
+            element.classList.add('animated');
+            let currentScore = 0;
+            const increment = targetScore / 50;
+            const timer = setInterval(() => {
+                currentScore += increment;
+                if (currentScore >= targetScore) {
+                    currentScore = targetScore;
+                    clearInterval(timer);
+                }
+                element.textContent = `${currentScore.toFixed(1)}/100`;
+            }, 30);
+        }
+
+        function animateStars(starsContainer) {
+            const stars = starsContainer.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                setTimeout(() => {
+                    star.classList.add('animated');
+                }, index * 100);
+            });
+        }
 
         function addCombination() {
             if (combinationCount >= maxCombinations) {
@@ -806,9 +988,16 @@
             const container = document.getElementById('user-scores-container');
             
             let html = '';
+            let bestScore = 0;
+            
             scores.forEach((result, index) => {
                 const scoreClass = result.score >= 70 ? 'high-score' : 
                                  result.score >= 50 ? 'medium-score' : 'low-score';
+                
+                // Track best score
+                if (result.score > bestScore) {
+                    bestScore = result.score;
+                }
 
                 html += `
                     <div class="score-card ${scoreClass}">
@@ -816,7 +1005,7 @@
                             ${result.combination.map(num => `<div class="combo-number">${num}</div>`).join('')}
                         </div>
                         <div class="score-display">
-                            <div class="score-value">${result.score.toFixed(1)}/100</div>
+                            <div class="score-value" data-score="${result.score}">0.0/100</div>
                             <div class="score-stars">${generateStars(result.score)}</div>
                         </div>
                         <div class="score-rational">${result.rational}</div>
@@ -825,6 +1014,20 @@
             });
 
             container.innerHTML = html;
+            
+            // Animate scores and stars
+            setTimeout(() => {
+                scores.forEach((result, index) => {
+                    const scoreElement = container.querySelectorAll('.score-value')[index];
+                    const starsElement = container.querySelectorAll('.score-stars')[index];
+                    
+                    animateScore(scoreElement, result.score);
+                    animateStars(starsElement);
+                });
+                
+                // Update personal best
+                updatePersonalBest(bestScore);
+            }, 100);
         }
 
         function displayAIScores(scores) {
@@ -841,20 +1044,103 @@
                             ${result.combination.map(num => `<div class="combo-number">${num}</div>`).join('')}
                         </div>
                         <div class="score-display">
-                            <div class="score-value">${result.score.toFixed(1)}/100</div>
+                            <div class="score-value" data-score="${result.score}">0.0/100</div>
                             <div class="score-stars">${generateStars(result.score)}</div>
                         </div>
                         <div class="score-rational">${result.rational}</div>
+                        <div class="ai-insights" onclick="toggleInsights(${index})">
+                            <i class="fas fa-lightbulb"></i> Why this combination?
+                            <div class="insights-content" id="insights-${index}">
+                                ${generateAIInsights(result)}
+                            </div>
+                        </div>
                     </div>
                 `;
             });
 
             container.innerHTML = html;
             
+            // Animate scores and stars
+            setTimeout(() => {
+                scores.slice(0, 3).forEach((result, index) => {
+                    const scoreElement = container.querySelectorAll('.score-value')[index];
+                    const starsElement = container.querySelectorAll('.score-stars')[index];
+                    
+                    animateScore(scoreElement, result.score);
+                    animateStars(starsElement);
+                });
+            }, 100);
+            
             // Show comparison if user scores are ready
             if (userScores.length > 0) {
                 showComparison();
             }
+        }
+
+        function generateAIInsights(result) {
+            const insights = [];
+            
+            // Analyze the combination
+            const combo = result.combination;
+            const sortedCombo = [...combo].sort((a, b) => a - b);
+            
+            // Range analysis
+            const lowNumbers = sortedCombo.filter(n => n <= 16).length;
+            const midNumbers = sortedCombo.filter(n => n >= 17 && n <= 32).length;
+            const highNumbers = sortedCombo.filter(n => n >= 33).length;
+            
+            if (lowNumbers >= 2 && midNumbers >= 2 && highNumbers >= 2) {
+                insights.push("Perfect balance across all number ranges (low/mid/high)");
+            } else if (lowNumbers >= 3) {
+                insights.push("Focus on low numbers - historically good frequency");
+            } else if (highNumbers >= 3) {
+                insights.push("Emphasis on high numbers - less common but higher payout potential");
+            }
+            
+            // Consecutive analysis
+            let consecutiveCount = 0;
+            for (let i = 0; i < sortedCombo.length - 1; i++) {
+                if (sortedCombo[i + 1] - sortedCombo[i] === 1) {
+                    consecutiveCount++;
+                }
+            }
+            
+            if (consecutiveCount === 0) {
+                insights.push("No consecutive numbers - maximizes coverage");
+            } else if (consecutiveCount === 1) {
+                insights.push("One consecutive pair - balanced approach");
+            } else {
+                insights.push("Multiple consecutive pairs - high risk, high reward");
+            }
+            
+            // Even/Odd balance
+            const evenNumbers = combo.filter(n => n % 2 === 0).length;
+            const oddNumbers = combo.filter(n => n % 2 === 1).length;
+            
+            if (evenNumbers === 3 && oddNumbers === 3) {
+                insights.push("Perfect even/odd balance (3:3)");
+            } else if (Math.abs(evenNumbers - oddNumbers) <= 1) {
+                insights.push("Good even/odd distribution");
+            } else {
+                insights.push("Unusual even/odd pattern - contrarian approach");
+            }
+            
+            // Sum analysis
+            const sum = combo.reduce((a, b) => a + b, 0);
+            if (sum >= 150 && sum <= 210) {
+                insights.push("Optimal sum range (150-210) - matches historical averages");
+            } else if (sum < 150) {
+                insights.push("Low sum approach - targets smaller number combinations");
+            } else {
+                insights.push("High sum approach - targets larger number combinations");
+            }
+            
+            return insights.map(insight => `<div class="insight-item">${insight}</div>`).join('');
+        }
+
+        function toggleInsights(index) {
+            const insightsContent = document.getElementById(`insights-${index}`);
+            insightsContent.classList.toggle('show');
         }
 
         function showComparison() {
