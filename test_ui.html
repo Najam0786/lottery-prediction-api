@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lottery Combination Scorer - Test UI</title>
+    <title>Lottery Prediction Dashboard - Modern UI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,111 +13,163 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
             min-height: 100vh;
             padding: 20px;
         }
         
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
-        .header {
+        .panel-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px;
+            padding: 25px;
             text-align: center;
         }
         
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .panel-header h2 {
+            font-size: 1.8em;
+            margin-bottom: 8px;
+            font-weight: 700;
         }
         
-        .header p {
-            font-size: 1.2em;
+        .panel-header p {
             opacity: 0.9;
+            font-size: 1em;
         }
         
-        .content {
-            padding: 30px;
+        .panel-content {
+            padding: 25px;
+            flex: 1;
+            overflow-y: auto;
         }
         
-        .combination-section {
-            margin-bottom: 30px;
+        /* Left Panel - User Combinations */
+        .combination-input-area {
+            margin-bottom: 25px;
+        }
+        
+        .input-section {
+            background: #f8f9fa;
+            border-radius: 15px;
             padding: 20px;
-            border: 2px solid #f0f0f0;
-            border-radius: 10px;
-            background: #fafafa;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
         }
         
-        .combination-header {
+        .input-section:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+        
+        .input-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
         
-        .combination-title {
-            font-size: 1.3em;
-            font-weight: bold;
+        .input-title {
+            font-size: 1.2em;
+            font-weight: 600;
             color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .remove-btn {
+        .input-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .remove-input {
             background: #ff4757;
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
         }
         
-        .remove-btn:hover {
+        .remove-input:hover {
             background: #ff3838;
+            transform: scale(1.1);
         }
         
-        .number-inputs {
+        .number-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             gap: 10px;
             margin-bottom: 15px;
         }
         
+        .number-field {
+            position: relative;
+        }
+        
         .number-input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 15px 10px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
             text-align: center;
             font-size: 1.1em;
-            font-weight: bold;
-            transition: border-color 0.3s;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: white;
         }
         
         .number-input:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .number-input.error {
-            border-color: #ff4757;
-            background: #ffe0e0;
-            animation: shake 0.5s;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
         }
         
         .number-input.success {
             border-color: #00b894;
             background: #e0f7f4;
+            color: #00b894;
+        }
+        
+        .number-input.error {
+            border-color: #ff4757;
+            background: #ffe0e0;
+            color: #ff4757;
+            animation: shake 0.5s;
         }
         
         @keyframes shake {
@@ -125,119 +178,635 @@
             75% { transform: translateX(5px); }
         }
         
-        .add-combination-btn {
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-            margin: 20px 0;
-            transition: transform 0.3s, box-shadow 0.3s;
-            display: block;
-            width: 100%;
         }
         
-        .add-combination-btn:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
         }
         
-        .add-combination-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #495057;
         }
         
-        .score-btn {
-            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
-            color: white;
-            border: none;
-            padding: 18px 40px;
-            border-radius: 10px;
-            font-size: 1.2em;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 20px 0;
-            transition: transform 0.3s, box-shadow 0.3s;
-            display: block;
-            width: 100%;
-        }
-        
-        .score-btn:hover {
+        .btn-secondary:hover:not(:disabled) {
+            background: #e9ecef;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
         
-        .score-btn:disabled {
-            background: #ccc;
+        .btn:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
         
-        .results {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 5px solid #667eea;
-        }
-        
-        .result-item {
+        /* Right Panel - Predictions */
+        .predictions-section {
             margin-bottom: 25px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .result-header {
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            gap: 10px;
         }
         
-        .combination-display {
+        .top-numbers {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .number-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .top-number {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .top-number:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .top-number-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .top-number-score {
+            font-size: 0.9em;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .combinations-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .combination-card {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .combination-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+        
+        .combination-numbers {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .combo-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .combination-score {
             font-size: 1.2em;
             font-weight: bold;
             color: #333;
-        }
-        
-        .score-display {
-            font-size: 1.5em;
-            font-weight: bold;
-            padding: 8px 15px;
-            border-radius: 5px;
-        }
-        
-        .score-high {
-            background: #00b894;
-            color: white;
-        }
-        
-        .score-medium {
-            background: #fdcb6e;
-            color: #333;
-        }
-        
-        .score-low {
-            background: #ff7675;
-            color: white;
-        }
-        
-        .rational-text {
-            line-height: 1.6;
-            color: #555;
             margin-bottom: 10px;
         }
         
+        .combination-rational {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .results-section {
+            margin-top: 25px;
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result-combination {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .result-number {
+            background: #667eea;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .result-score {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .result-rational {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .score-high { border-left-color: #00b894; }
+        .score-medium { border-left-color: #fdcb6e; }
+        .score-low { border-left-color: #ff4757; }
+        
         .loading {
             text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .loading i {
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #ffe0e0;
+            color: #d63031;
             padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .success {
+            background: #e0f7f4;
+            color: #00b894;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .panel {
+                min-height: auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .panel-header {
+                padding: 20px;
+            }
+            
+            .panel-content {
+                padding: 20px;
+            }
+            
+            .number-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Left Panel - User Combinations -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-user-edit"></i> Your Combinations</h2>
+                <p>Enter your lottery numbers and get AI-powered scores</p>
+            </div>
+            <div class="panel-content">
+                <div class="combination-input-area">
+                    <div id="combinations-container"></div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="add-combination" onclick="addCombination()">
+                        <i class="fas fa-plus"></i> Add Combination
+                    </button>
+                    <button class="btn btn-primary" id="score-btn" onclick="scoreCombinations()">
+                        <i class="fas fa-calculator"></i> Score My Numbers
+                    </button>
+                </div>
+                
+                <div class="results-section">
+                    <div id="results-container"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Predictions -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-chart-line"></i> AI Predictions</h2>
+                <p>Top numbers and recommended combinations</p>
+            </div>
+            <div class="panel-content">
+                <div class="predictions-section">
+                    <div class="section-title">
+                        <i class="fas fa-trophy"></i> Top Numbers
+                    </div>
+                    <div class="top-numbers">
+                        <p style="color: #666; margin-bottom: 10px;">Highest scoring numbers based on AI analysis</p>
+                        <div class="number-list" id="top-numbers-list">
+                            <div class="loading"><i class="fas fa-spinner"></i> Loading predictions...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="predictions-section">
+                    <div class="section-title">
+                        <i class="fas fa-dice"></i> Recommended Combinations
+                    </div>
+                    <div class="combinations-grid" id="combinations-grid">
+                        <div class="loading"><i class="fas fa-spinner"></i> Loading combinations...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://web-production-09cd3.up.railway.app';
+        let combinationCount = 0;
+        const maxCombinations = 5;
+
+        // Initialize the dashboard
+        window.onload = function() {
+            addCombination();
+            loadPredictions();
+        };
+
+        function addCombination() {
+            if (combinationCount >= maxCombinations) {
+                showMessage('Maximum 5 combinations allowed', 'error');
+                return;
+            }
+
+            combinationCount++;
+            const inputSection = document.createElement('div');
+            inputSection.className = 'input-section';
+            inputSection.id = `combination-${combinationCount}`;
+            
+            inputSection.innerHTML = `
+                <div class="input-header">
+                    <div class="input-title">
+                        <div class="input-number">${combinationCount}</div>
+                        <span>Combination ${combinationCount}</span>
+                    </div>
+                    <button class="remove-input" onclick="removeCombination(${combinationCount})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="number-grid">
+                    ${Array.from({length: 6}, (_, i) => `
+                        <div class="number-field">
+                            <input type="number" class="number-input" placeholder="${i + 1}" 
+                                   min="1" max="49" id="num-${combinationCount}-${i + 1}">
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            document.getElementById('combinations-container').appendChild(inputSection);
+            updateButtons();
+
+            // Add input validation
+            const inputs = inputSection.querySelectorAll('.number-input');
+            inputs.forEach(input => {
+                input.addEventListener('input', validateInput);
+                input.addEventListener('blur', validateInput);
+            });
+        }
+
+        function removeCombination(id) {
+            const element = document.getElementById(`combination-${id}`);
+            element.remove();
+            combinationCount--;
+
+            // Renumber remaining combinations
+            const remaining = document.querySelectorAll('.input-section');
+            remaining.forEach((combo, index) => {
+                const newId = index + 1;
+                combo.id = `combination-${newId}`;
+                combo.querySelector('.input-number').textContent = newId;
+                combo.querySelector('.input-title span').textContent = `Combination ${newId}`;
+                combo.querySelector('.remove-input').setAttribute('onclick', `removeCombination(${newId})`);
+                
+                // Update input IDs
+                const inputs = combo.querySelectorAll('.number-input');
+                inputs.forEach((input, inputIndex) => {
+                    input.id = `num-${newId}-${inputIndex + 1}`;
+                });
+            });
+
+            updateButtons();
+        }
+
+        function validateInput(event) {
+            const input = event.target;
+            const value = parseInt(input.value);
+
+            // Remove previous classes
+            input.classList.remove('error', 'success');
+
+            if (input.value === '') {
+                return; // Empty input is valid (user hasn't entered anything yet)
+            }
+
+            if (isNaN(value) || value < 1 || value > 49) {
+                input.classList.add('error');
+            } else {
+                input.classList.add('success');
+            }
+
+            // Check for duplicates within the same combination
+            const combinationId = input.id.split('-')[1];
+            const allInputs = document.querySelectorAll(`[id^="num-${combinationId}-"]`);
+            const values = Array.from(allInputs).map(inp => parseInt(inp.value)).filter(val => !isNaN(val));
+            
+            if (new Set(values).size !== values.length) {
+                allInputs.forEach(inp => {
+                    if (inp.value !== '') {
+                        inp.classList.add('error');
+                    }
+                });
+            }
+        }
+
+        function getCombinations() {
+            const combinations = [];
+            const errors = [];
+
+            for (let i = 1; i <= combinationCount; i++) {
+                const numbers = [];
+                let hasError = false;
+
+                for (let j = 1; j <= 6; j++) {
+                    const input = document.getElementById(`num-${i}-${j}`);
+                    if (!input) continue;
+                    
+                    const value = parseInt(input.value);
+
+                    if (isNaN(value) || value < 1 || value > 49) {
+                        if (input.value !== '') {
+                            input.classList.add('error');
+                            hasError = true;
+                            errors.push(`Combination ${i}: All numbers must be between 1-49`);
+                        }
+                    } else {
+                        numbers.push(value);
+                    }
+                }
+
+                if (hasError) {
+                    continue;
+                }
+
+                if (numbers.length !== 6) {
+                    continue; // Skip incomplete combinations
+                }
+
+                if (new Set(numbers).size !== 6) {
+                    errors.push(`Combination ${i}: Numbers must be unique`);
+                    continue;
+                }
+
+                combinations.push(numbers.sort((a, b) => a - b));
+            }
+
+            return { combinations, errors };
+        }
+
+        async function scoreCombinations() {
+            const { combinations, errors } = getCombinations();
+
+            if (errors.length > 0) {
+                showMessage(errors.join('<br>'), 'error');
+                return;
+            }
+
+            if (combinations.length === 0) {
+                showMessage('Please complete at least one combination', 'error');
+                return;
+            }
+
+            // Show loading
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Scoring your combinations...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/user/score-combinations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ combinations })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Scoring failed');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContainer = document.getElementById('results-container');
+            
+            let html = '<div class="section-title"><i class="fas fa-star"></i> Your Scores</div>';
+
+            data.scored_combinations.forEach((result, index) => {
+                const scoreClass = result.score >= 70 ? 'score-high' : 
+                                 result.score >= 50 ? 'score-medium' : 'score-low';
+
+                html += `
+                    <div class="result-card ${scoreClass}">
+                        <div class="result-combination">
+                            ${result.combination.map(num => `<div class="result-number">${num}</div>`).join('')}
+                        </div>
+                        <div class="result-score">Score: ${result.score.toFixed(1)}/100</div>
+                        <div class="result-rational">${result.rational}</div>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+        }
+
+        async function loadPredictions() {
+            try {
+                // Load top numbers and combinations
+                const response = await fetch(`${API_BASE_URL}/user/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ top_n: 15, n_combinations: 5 })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to load predictions');
+                }
+
+                displayTopNumbers(data.top_numbers);
+                displayCombinations(data.combinations);
+
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+                document.getElementById('top-numbers-list').innerHTML = 
+                    '<div class="error">Failed to load predictions</div>';
+                document.getElementById('combinations-grid').innerHTML = 
+                    '<div class="error">Failed to load combinations</div>';
+            }
+        }
+
+        function displayTopNumbers(topNumbers) {
+            const container = document.getElementById('top-numbers-list');
+            
+            const html = topNumbers.slice(0, 12).map(item => `
+                <div class="top-number">
+                    <div class="top-number-value">${item.number}</div>
+                    <div class="top-number-score">${(item.score * 100).toFixed(1)}%</div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        function displayCombinations(combinations) {
+            const container = document.getElementById('combinations-grid');
+            
+            const html = combinations.slice(0, 3).map(combo => `
+                <div class="combination-card">
+                    <div class="combination-numbers">
+                        ${combo.map(num => `<div class="combo-number">${num}</div>`).join('')}
+                    </div>
+                    <div class="combination-score">AI Recommended</div>
+                    <div class="combination-rational">
+                        Balanced combination with good statistical backing
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        function showMessage(message, type) {
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function updateButtons() {
+            const addBtn = document.getElementById('add-combination');
+            const scoreBtn = document.getElementById('score-btn');
+
+            addBtn.disabled = combinationCount >= maxCombinations;
+            addBtn.innerHTML = combinationCount >= maxCombinations ?
+                '<i class="fas fa-ban"></i> Maximum reached' :
+                '<i class="fas fa-plus"></i> Add Combination';
+
+            scoreBtn.disabled = combinationCount === 0;
+        }
+    </script>
+</body>
+</html>
             color: #667eea;
             font-size: 1.2em;
         }
