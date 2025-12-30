@@ -1130,15 +1130,15 @@
                 const scoreData = await scoreResponse.json();
 
                 if (scoreResponse.ok) {
-                    aiScores = scoreData.scored_combinations;
-                    displayAIScores(scoreData.scored_combinations);
+                    aiScores = (scoreData.scored_combinations || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+                    displayAIScores(aiScores);
                 } else {
                     // Use fallback scores
                     aiScores = data.combinations.map((combo, index) => ({
                         combination: combo,
                         score: 75 + Math.random() * 20,
                         rational: "AI-optimized combination with strong statistical backing"
-                    }));
+                    })).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
                     displayAIScores(aiScores);
                 }
 
@@ -1154,7 +1154,7 @@
                     combination: combo,
                     score: 75 + Math.random() * 20,
                     rational: "AI-optimized combination with strong statistical backing"
-                }));
+                })).slice().sort((a, b) => (b.score || 0) - (a.score || 0));
                 displayAIScores(aiScores);
             }
         }
@@ -1211,7 +1211,8 @@
             const container = document.getElementById('ai-scores-container');
             
             let html = '';
-            scores.slice(0, 3).forEach((result, index) => {
+            const topScores = (scores || []).slice().sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 3);
+            topScores.forEach((result, index) => {
                 const scoreClass = result.score >= 70 ? 'high-score' : 
                                  result.score >= 50 ? 'medium-score' : 'low-score';
 
@@ -1239,7 +1240,7 @@
             
             // Animate scores and stars
             setTimeout(() => {
-                scores.slice(0, 3).forEach((result, index) => {
+                topScores.forEach((result, index) => {
                     const scoreElement = container.querySelectorAll('.score-value')[index];
                     const starsElement = container.querySelectorAll('.score-stars')[index];
                     
