@@ -305,8 +305,8 @@ class CombinationScoreRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "combinations": [
-                    [1, 2, 3, 4, 5, 6],
-                    [7, 8, 9, 10, 11, 12]
+                    [7, 14, 21, 28, 35, 42],
+                    [1, 8, 15, 22, 29, 36]
                 ]
             }
         }
@@ -319,9 +319,9 @@ class CombinationScore(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "combination": [1, 2, 3, 4, 5, 6],
-                "score": 50.0,
-                "rational": "Good numbers"
+                "combination": [7, 14, 21, 28, 35, 42],
+                "score": 65.5,
+                "rational": "Strong numbers: 7, 14, 21 | Good distribution | No consecutive pairs | Fair combination"
             }
         }
 
@@ -334,14 +334,14 @@ class CombinationScoreResponse(BaseModel):
             "example": {
                 "scored_combinations": [
                     {
-                        "combination": [1, 2, 3, 4, 5, 6],
-                        "score": 50.0,
-                        "rational": "Good numbers"
+                        "combination": [7, 14, 21, 28, 35, 42],
+                        "score": 65.5,
+                        "rational": "Strong numbers: 7, 14, 21 | Good distribution | No consecutive pairs | Fair combination"
                     },
                     {
-                        "combination": [7, 8, 9, 10, 11, 12],
-                        "score": 40.0,
-                        "rational": "Fair numbers"
+                        "combination": [1, 8, 15, 22, 29, 36],
+                        "score": 45.2,
+                        "rational": "Weak numbers: 1, 8 | Poor distribution | Contains consecutive pairs | Weak combination"
                     }
                 ],
                 "metadata": {
