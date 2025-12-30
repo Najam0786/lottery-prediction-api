@@ -105,11 +105,24 @@
         .number-input:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         .number-input.error {
             border-color: #ff4757;
             background: #ffe0e0;
+            animation: shake 0.5s;
+        }
+        
+        .number-input.success {
+            border-color: #00b894;
+            background: #e0f7f4;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
         
         .add-combination-btn {
@@ -284,7 +297,7 @@
         
         <div class="content">
             <div class="info">
-                <strong>📝 Instructions:</strong> Enter 6 numbers (1-49) for each combination. Add up to 3 combinations to compare scores.
+                <strong>📝 Instructions:</strong> Enter 6 numbers (1-49) for each combination. Add up to 5 combinations to compare scores. Each number must be unique within a combination.
             </div>
             
             <div id="combinations-container">
@@ -292,7 +305,7 @@
             </div>
             
             <button id="add-combination" class="add-combination-btn" onclick="addCombination()">
-                ➕ Add Combination (Max 3)
+                ➕ Add Combination (Max 5)
             </button>
             
             <button id="score-btn" class="score-btn" onclick="scoreCombinations()" disabled>
@@ -306,11 +319,11 @@
     <script>
         const API_BASE_URL = 'https://web-production-09cd3.up.railway.app';
         let combinationCount = 0;
-        const maxCombinations = 3;
+        const maxCombinations = 5;
 
         function addCombination() {
             if (combinationCount >= maxCombinations) {
-                showMessage('Maximum 3 combinations allowed', 'error');
+                showMessage('Maximum 5 combinations allowed', 'error');
                 return;
             }
 
@@ -322,15 +335,15 @@
             combinationDiv.innerHTML = `
                 <div class="combination-header">
                     <span class="combination-title">Combination ${combinationCount}</span>
-                    <button class="remove-btn" onclick="removeCombination(${combinationCount})">Remove</button>
+                    <button class="remove-btn" onclick="removeCombination(${combinationCount})">🗑️ Remove</button>
                 </div>
                 <div class="number-inputs">
-                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-1">
-                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-2">
-                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-3">
-                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-4">
-                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-5">
-                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-6">
+                    <input type="number" class="number-input" placeholder="Enter number 1" min="1" max="49" id="num-${combinationCount}-1">
+                    <input type="number" class="number-input" placeholder="Enter number 2" min="1" max="49" id="num-${combinationCount}-2">
+                    <input type="number" class="number-input" placeholder="Enter number 3" min="1" max="49" id="num-${combinationCount}-3">
+                    <input type="number" class="number-input" placeholder="Enter number 4" min="1" max="49" id="num-${combinationCount}-4">
+                    <input type="number" class="number-input" placeholder="Enter number 5" min="1" max="49" id="num-${combinationCount}-5">
+                    <input type="number" class="number-input" placeholder="Enter number 6" min="1" max="49" id="num-${combinationCount}-6">
                 </div>
             `;
             
@@ -372,10 +385,30 @@
             const input = event.target;
             const value = parseInt(input.value);
             
+            // Remove previous classes
+            input.classList.remove('error', 'success');
+            
+            if (input.value === '') {
+                return; // Empty input is valid (user hasn't entered anything yet)
+            }
+            
             if (isNaN(value) || value < 1 || value > 49) {
                 input.classList.add('error');
             } else {
-                input.classList.remove('error');
+                input.classList.add('success');
+            }
+            
+            // Check for duplicates within the same combination
+            const combinationId = input.id.split('-')[1];
+            const allInputs = document.querySelectorAll(`[id^="num-${combinationId}-"]`);
+            const values = Array.from(allInputs).map(inp => parseInt(inp.value)).filter(val => !isNaN(val));
+            
+            if (new Set(values).size !== values.length) {
+                allInputs.forEach(inp => {
+                    if (inp.value !== '') {
+                        inp.classList.add('error');
+                    }
+                });
             }
         }
 
@@ -394,18 +427,22 @@
                     if (isNaN(value) || value < 1 || value > 49) {
                         input.classList.add('error');
                         hasError = true;
+                        errors.push(`Combination ${i}: All numbers must be between 1-49`);
                     } else {
                         numbers.push(value);
                     }
                 }
                 
                 if (hasError) {
-                    errors.push(`Combination ${i} has invalid numbers (must be 1-49)`);
-                } else if (new Set(numbers).size !== 6) {
-                    errors.push(`Combination ${i} has duplicate numbers`);
-                } else {
-                    combinations.push(numbers.sort((a, b) => a - b));
+                    continue;
                 }
+                
+                if (new Set(numbers).size !== 6) {
+                    errors.push(`Combination ${i}: Numbers must be unique`);
+                    continue;
+                }
+                
+                combinations.push(numbers.sort((a, b) => a - b));
             }
             
             return { combinations, errors };
