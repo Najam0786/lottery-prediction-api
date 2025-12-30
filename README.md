@@ -187,6 +187,23 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 
 <br>
 
+## 🧪 Test UI Dashboard (`/test-ui`)
+
+The project includes a modern dashboard UI for interactive testing:
+
+- **User vs AI panels**: enter your combinations on the left and compare against AI-generated combinations on the right
+- **Combination scoring**: each card shows a **0–100 score**, star rating, and an explanation
+- **Score comparison**: highlights the best user vs best AI combination and shows a winner message
+- **AI insights**: expandable "Why this combination?" section for AI-generated combinations
+
+Live: https://web-production-09cd3.up.railway.app/test-ui
+
+<br>
+
+---
+
+<br>
+
 ## 🔄 Data Refresh System (Orchestrator)
 
 The system includes an **automated data refresh mechanism** that keeps predictions up-to-date with the latest lottery draws.
@@ -850,6 +867,17 @@ Health check endpoint for monitoring and load balancers.
 ### `GET /predict`
 
 Get lottery number predictions.
+
+<br>
+
+### Scoring Calibration (0–100)
+
+Scores returned by `POST /user/score-combinations` are calibrated to be user-friendly:
+
+- The model produces probabilities for each of the 49 numbers (LSTM + statistical frequency/recency)
+- We normalize and fuse them (**60% LSTM + 40% stats**)
+- Each number is mapped to a **percentile rank** among the 49 numbers
+- A combination's score is the **average percentile** of its 6 numbers (reported as **0–100**)
 
 #### Parameters
 
