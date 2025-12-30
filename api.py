@@ -290,13 +290,13 @@ class PredictionResponse(BaseModel):
 
 class CombinationScoreRequest(BaseModel):
     combinations: List[List[int]]
-
+    
     class Config:
         json_schema_extra = {
             "example": {
                 "combinations": [
-                    [7, 14, 21, 28, 35, 42],
-                    [1, 2, 3, 4, 5, 6]
+                    [1, 2, 3, 4, 5, 6],
+                    [7, 8, 9, 10, 11, 12]
                 ]
             }
         }
@@ -306,36 +306,36 @@ class CombinationScore(BaseModel):
     score: float
     individual_scores: List[float]
     rational: str
-
+    
     class Config:
         json_schema_extra = {
             "example": {
-                "combination": [7, 14, 21, 28, 35, 42],
-                "score": 78.5,
-                "individual_scores": [82.1, 75.3, 79.8, 76.2, 81.4, 73.9],
-                "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing"
+                "combination": [1, 2, 3, 4, 5, 6],
+                "score": 50.0,
+                "individual_scores": [40.0, 30.0, 20.0, 10.0, 0.0, 0.0],
+                "rational": "Good numbers"
             }
         }
 
 class CombinationScoreResponse(BaseModel):
     scored_combinations: List[CombinationScore]
     metadata: Dict[str, Any]
-
+    
     class Config:
         json_schema_extra = {
             "example": {
                 "scored_combinations": [
                     {
-                        "combination": [7, 14, 21, 28, 35, 42],
-                        "score": 78.5,
-                        "individual_scores": [82.1, 75.3, 79.8, 76.2, 81.4, 73.9],
-                        "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing"
+                        "combination": [1, 2, 3, 4, 5, 6],
+                        "score": 50.0,
+                        "individual_scores": [40.0, 30.0, 20.0, 10.0, 0.0, 0.0],
+                        "rational": "Good numbers"
                     },
                     {
-                        "combination": [1, 2, 3, 4, 5, 6],
-                        "score": 25.3,
-                        "individual_scores": [45.2, 38.1, 42.7, 35.9, 48.3, 52.1],
-                        "rational": "Weak numbers: 2, 4 (low historical frequency) | Poor number distribution - concentrated in low range | Contains 5 consecutive pairs (statistically rare) | Shows arithmetic pattern (reduces randomness) | Weak combination with multiple statistical issues"
+                        "combination": [7, 8, 9, 10, 11, 12],
+                        "score": 40.0,
+                        "individual_scores": [30.0, 20.0, 10.0, 0.0, 0.0, 0.0],
+                        "rational": "Fair numbers"
                     }
                 ],
                 "metadata": {
@@ -642,10 +642,10 @@ def score_combination(combination, lstm_scores, stat_scores):
 @app.post("/user/score-combinations", response_model=CombinationScoreResponse)
 async def score_user_combinations(body: CombinationScoreRequest):
     """
-    Score user-provided lottery combinations with rational explanations.
+    Score lottery combinations.
     
-    Parameters:
-    - combinations: List of lottery combinations (each with 6 numbers)
+    Takes a list of lottery combinations and returns scores with explanations.
+    Each combination must contain exactly 6 unique numbers between 1-49.
     """
     try:
         # Check if models are loaded
