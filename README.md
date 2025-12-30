@@ -122,6 +122,7 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 - [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
+- [Mobile App Integration](#-mobile-app-integration)
 - [API Reference](#-api-reference)
 - [Cloud Deployment](#-cloud-deployment)
   - [Railway](#-railway-recommended)
@@ -577,7 +578,188 @@ curl "http://localhost:8000/predict?top_n=10&n_combinations=5"
 
 <br>
 
-## 📡 API Reference
+## � Mobile App Integration
+
+Perfect for iOS, Android, and web applications! Our API is designed with mobile-first principles.
+
+### 🚀 Quick Integration
+
+**Base URLs:**
+```
+Production: https://web-production-09cd3.up.railway.app
+Local:      http://localhost:8000
+```
+
+### 📋 Available Endpoints
+
+| Endpoint | Method | Use Case | Mobile Friendly |
+|----------|--------|----------|-----------------|
+| `/user/predict` | POST | Get AI-generated predictions | ✅ JSON body |
+| `/user/score-combinations` | POST | Score user combinations | ✅ JSON body |
+| `/health` | GET | Check API status | ✅ Lightweight |
+| `/predict` | GET | Quick predictions | ⚠️ Query params |
+
+### 💻 Code Examples
+
+#### Swift (iOS)
+```swift
+struct LotteryService {
+    static let baseURL = "https://web-production-09cd3.up.railway.app"
+    
+    func getPredictions(top_n: Int, combinations: Int) async throws -> PredictionResponse {
+        let url = URL(string: "\(baseURL)/user/predict")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body = ["top_n": top_n, "n_combinations": combinations]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return try JSONDecoder().decode(PredictionResponse.self, from: data)
+    }
+    
+    func scoreCombinations(_ combinations: [[Int]]) async throws -> ScoreResponse {
+        let url = URL(string: "\(baseURL)/user/score-combinations")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body = ["combinations": combinations]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return try JSONDecoder().decode(ScoreResponse.self, from: data)
+    }
+}
+```
+
+#### Kotlin (Android)
+```kotlin
+class LotteryApiService {
+    private val client = OkHttpClient()
+    private val gson = Gson()
+    private val baseURL = "https://web-production-09cd3.up.railway.app"
+    
+    suspend fun getPredictions(topN: Int, nCombinations: Int): PredictionResponse {
+        val url = "$baseURL/user/predict"
+        val body = JSONObject().apply {
+            put("top_n", topN)
+            put("n_combinations", nCombinations)
+        }
+        
+        val request = Request.Builder()
+            .url(url)
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+            
+        val response = client.newCall(request).execute()
+        return gson.fromJson(response.body?.string(), PredictionResponse::class.java)
+    }
+    
+    suspend fun scoreCombinations(combinations: List<List<Int>>): ScoreResponse {
+        val url = "$baseURL/user/score-combinations"
+        val body = JSONObject().apply {
+            put("combinations", JSONArray(combinations))
+        }
+        
+        val request = Request.Builder()
+            .url(url)
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+            
+        val response = client.newCall(request).execute()
+        return gson.fromJson(response.body?.string(), ScoreResponse::class.java)
+    }
+}
+```
+
+#### JavaScript (Web/React)
+```javascript
+class LotteryAPI {
+    constructor(baseURL = 'https://web-production-09cd3.up.railway.app') {
+        this.baseURL = baseURL;
+    }
+    
+    async getPredictions(topN = 15, nCombinations = 10) {
+        const response = await fetch(`${this.baseURL}/user/predict`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ top_n: topN, n_combinations: nCombinations })
+        });
+        return await response.json();
+    }
+    
+    async scoreCombinations(combinations) {
+        const response = await fetch(`${this.baseURL}/user/score-combinations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ combinations })
+        });
+        return await response.json();
+    }
+    
+    async checkHealth() {
+        const response = await fetch(`${this.baseURL}/health`);
+        return await response.json();
+    }
+}
+
+// Usage
+const lottery = new LotteryAPI();
+const predictions = await lottery.getPredictions(10, 5);
+const scores = await lottery.scoreCombinations([[7,14,21,28,35,42]]);
+```
+
+### 🔧 Best Practices
+
+✅ **Use POST endpoints** for mobile apps (`/user/predict`, `/user/score-combinations`)
+✅ **Implement retry logic** for network failures
+✅ **Cache predictions** for offline use
+✅ **Handle rate limits** gracefully
+✅ **Validate user input** before sending to API
+
+### 🚨 Error Handling
+
+```swift
+// Swift Example
+do {
+    let predictions = try await lotteryService.getPredictions(top_n: 10, combinations: 5)
+    // Update UI with predictions
+} catch {
+    if let urlError = error as? URLError {
+        switch urlError.code {
+        case .notConnectedToInternet:
+            showNetworkError()
+        case .timedOut:
+            showTimeoutError()
+        default:
+            showGenericError()
+        }
+    }
+}
+```
+
+### 📊 Response Models
+
+```swift
+struct PredictionResponse: Codable {
+    let top_numbers: [NumberPrediction]
+    let combinations: [[Int]]
+    let metadata: Metadata
+}
+
+struct ScoreResponse: Codable {
+    let scored_combinations: [CombinationScore]
+    let metadata: Metadata
+}
+```
+
+---
+
+<br>
+
+## �📡 API Reference
 
 ### Base URL
 
@@ -609,7 +791,10 @@ Returns API information and status.
   },
   "endpoints": {
     "/predict": "Get lottery number predictions",
+    "/user/predict": "User-facing predictions (POST) - for mobile/web apps",
+    "/user/score-combinations": "Score user combinations with explanations (POST) - NEW!",
     "/health": "Health check",
+    "/admin/retrain": "Trigger data refresh (POST)",
     "/docs": "Interactive API documentation (Swagger UI)",
     "/redoc": "Alternative API documentation"
   }
@@ -753,6 +938,92 @@ curl -X POST "https://web-production-09cd3.up.railway.app/user/predict" \
 ```
 
 </details>
+
+<br>
+
+### `POST /user/score-combinations` ⭐ **NEW!**
+
+Score user-provided lottery combinations with detailed rational explanations. Perfect for validating your own number choices!
+
+#### Request Body
+
+```json
+{
+  "combinations": [
+    [7, 14, 21, 28, 35, 42],
+    [1, 2, 3, 4, 5, 6]
+  ]
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `combinations` | array | List of lottery combinations (each with 6 unique numbers 1-49) |
+
+#### Example Request
+
+```bash
+curl -X POST "https://web-production-09cd3.up.railway.app/user/score-combinations" \
+  -H "Content-Type: application/json" \
+  -d '{"combinations": [[7,14,21,28,35,42], [1,2,3,4,5,6]]}'
+```
+
+<details>
+<summary><b>Response Example</b></summary>
+
+```json
+{
+  "scored_combinations": [
+    {
+      "combination": [7, 14, 21, 28, 35, 42],
+      "score": 78.5,
+      "individual_scores": [82.1, 75.3, 79.8, 76.2, 81.4, 73.9],
+      "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing"
+    },
+    {
+      "combination": [1, 2, 3, 4, 5, 6],
+      "score": 25.3,
+      "individual_scores": [45.2, 38.1, 42.7, 35.9, 48.3, 52.1],
+      "rational": "Weak numbers: 2, 4 (low historical frequency) | Poor number distribution - concentrated in low range | Contains 5 consecutive pairs (statistically rare) | Shows arithmetic pattern (reduces randomness) | Weak combination with multiple statistical issues"
+    }
+  ],
+  "metadata": {
+    "model_type": "Bidirectional LSTM + Statistical Ensemble",
+    "ensemble_models": 5,
+    "scoring_method": "60% LSTM + 40% Statistical",
+    "timestamp": "2025-12-30T12:00:00.000000",
+    "combinations_scored": 2
+  }
+}
+```
+
+</details>
+
+#### Scoring Features
+
+🧠 **Individual Number Analysis**
+- LSTM confidence scores for each number
+- Statistical frequency and recency analysis
+- Combined weighted scoring (60% LSTM + 40% Statistical)
+
+📊 **Pattern Detection**
+- Consecutive number analysis
+- Arithmetic pattern detection
+- Number distribution across ranges
+
+💡 **Rational Explanations**
+- Detailed breakdown of why each combination scored as it did
+- Identifies strong and weak numbers
+- Provides actionable insights for number selection
+
+#### Score Interpretation
+
+| Score Range | Assessment | Description |
+|-------------|------------|-------------|
+| 70-100 | Excellent | Strong statistical backing, recommended |
+| 50-69 | Good | Moderate statistical support, viable option |
+| 30-49 | Fair | Some statistical weaknesses, use with caution |
+| 0-29 | Weak | Multiple statistical issues, not recommended |
 
 <br>
 
