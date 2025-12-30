@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottery Combination Scorer - Test UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .combination-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+        
+        .combination-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .combination-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        
+        .remove-btn:hover {
+            background: #ff3838;
+        }
+        
+        .number-inputs {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .number-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: border-color 0.3s;
+        }
+        
+        .number-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .number-input.error {
+            border-color: #ff4757;
+            background: #ffe0e0;
+        }
+        
+        .add-combination-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: block;
+            width: 100%;
+        }
+        
+        .add-combination-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .add-combination-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .score-btn {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: block;
+            width: 100%;
+        }
+        
+        .score-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .score-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .result-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .combination-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .score-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+        
+        .score-high {
+            background: #00b894;
+            color: white;
+        }
+        
+        .score-medium {
+            background: #fdcb6e;
+            color: #333;
+        }
+        
+        .score-low {
+            background: #ff7675;
+            color: white;
+        }
+        
+        .rational-text {
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .individual-scores {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .individual-score {
+            background: #f1f2f6;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .error {
+            background: #ffe0e0;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 600px) {
+            .number-inputs {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎰 Lottery Combination Scorer</h1>
+            <p>Test your lottery combinations with AI-powered scoring and detailed explanations</p>
+        </div>
+        
+        <div class="content">
+            <div class="info">
+                <strong>📝 Instructions:</strong> Enter 6 numbers (1-49) for each combination. Add up to 3 combinations to compare scores.
+            </div>
+            
+            <div id="combinations-container">
+                <!-- Combinations will be added here dynamically -->
+            </div>
+            
+            <button id="add-combination" class="add-combination-btn" onclick="addCombination()">
+                ➕ Add Combination (Max 3)
+            </button>
+            
+            <button id="score-btn" class="score-btn" onclick="scoreCombinations()" disabled>
+                🎯 Score My Combinations
+            </button>
+            
+            <div id="results-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://web-production-09cd3.up.railway.app';
+        let combinationCount = 0;
+        const maxCombinations = 3;
+
+        function addCombination() {
+            if (combinationCount >= maxCombinations) {
+                showMessage('Maximum 3 combinations allowed', 'error');
+                return;
+            }
+
+            combinationCount++;
+            const combinationDiv = document.createElement('div');
+            combinationDiv.className = 'combination-section';
+            combinationDiv.id = `combination-${combinationCount}`;
+            
+            combinationDiv.innerHTML = `
+                <div class="combination-header">
+                    <span class="combination-title">Combination ${combinationCount}</span>
+                    <button class="remove-btn" onclick="removeCombination(${combinationCount})">Remove</button>
+                </div>
+                <div class="number-inputs">
+                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-1">
+                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-2">
+                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-3">
+                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-4">
+                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-5">
+                    <input type="number" class="number-input" placeholder="1-49" min="1" max="49" id="num-${combinationCount}-6">
+                </div>
+            `;
+            
+            document.getElementById('combinations-container').appendChild(combinationDiv);
+            updateButtons();
+            
+            // Add input validation
+            const inputs = combinationDiv.querySelectorAll('.number-input');
+            inputs.forEach(input => {
+                input.addEventListener('input', validateInput);
+                input.addEventListener('blur', validateInput);
+            });
+        }
+
+        function removeCombination(id) {
+            const element = document.getElementById(`combination-${id}`);
+            element.remove();
+            combinationCount--;
+            
+            // Renumber remaining combinations
+            const remaining = document.querySelectorAll('.combination-section');
+            remaining.forEach((combo, index) => {
+                const newId = index + 1;
+                combo.id = `combination-${newId}`;
+                combo.querySelector('.combination-title').textContent = `Combination ${newId}`;
+                combo.querySelector('.remove-btn').setAttribute('onclick', `removeCombination(${newId})`);
+                
+                // Update input IDs
+                const inputs = combo.querySelectorAll('.number-input');
+                inputs.forEach((input, inputIndex) => {
+                    input.id = `num-${newId}-${inputIndex + 1}`;
+                });
+            });
+            
+            updateButtons();
+        }
+
+        function validateInput(event) {
+            const input = event.target;
+            const value = parseInt(input.value);
+            
+            if (isNaN(value) || value < 1 || value > 49) {
+                input.classList.add('error');
+            } else {
+                input.classList.remove('error');
+            }
+        }
+
+        function getCombinations() {
+            const combinations = [];
+            const errors = [];
+            
+            for (let i = 1; i <= combinationCount; i++) {
+                const numbers = [];
+                let hasError = false;
+                
+                for (let j = 1; j <= 6; j++) {
+                    const input = document.getElementById(`num-${i}-${j}`);
+                    const value = parseInt(input.value);
+                    
+                    if (isNaN(value) || value < 1 || value > 49) {
+                        input.classList.add('error');
+                        hasError = true;
+                    } else {
+                        numbers.push(value);
+                    }
+                }
+                
+                if (hasError) {
+                    errors.push(`Combination ${i} has invalid numbers (must be 1-49)`);
+                } else if (new Set(numbers).size !== 6) {
+                    errors.push(`Combination ${i} has duplicate numbers`);
+                } else {
+                    combinations.push(numbers.sort((a, b) => a - b));
+                }
+            }
+            
+            return { combinations, errors };
+        }
+
+        async function scoreCombinations() {
+            const { combinations, errors } = getCombinations();
+            
+            if (errors.length > 0) {
+                showMessage(errors.join('<br>'), 'error');
+                return;
+            }
+            
+            if (combinations.length === 0) {
+                showMessage('Please add at least one combination', 'error');
+                return;
+            }
+            
+            // Show loading
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = '<div class="loading">🔄 Scoring your combinations...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/user/score-combinations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ combinations })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Scoring failed');
+                }
+                
+                displayResults(data);
+                
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContainer = document.getElementById('results-container');
+            
+            let html = '<div class="results"><h2>🎯 Scoring Results</h2>';
+            
+            data.scored_combinations.forEach((result, index) => {
+                const scoreClass = result.score >= 70 ? 'score-high' : 
+                                 result.score >= 50 ? 'score-medium' : 'score-low';
+                
+                html += `
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="combination-display">Combination ${index + 1}: [${result.combination.join(', ')}]</span>
+                            <span class="score-display ${scoreClass}">${result.score.toFixed(1)}/100</span>
+                        </div>
+                        <div class="rational-text">${result.rational}</div>
+                        <div class="individual-scores">
+                            ${result.individual_scores.map((score, i) => 
+                                `<span class="individual-score">${result.combination[i]}: ${score.toFixed(1)}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `<div style="margin-top: 20px; font-size: 0.9em; color: #666;">
+                <strong>Scoring Method:</strong> ${data.metadata.scoring_method}<br>
+                <strong>Models Used:</strong> ${data.metadata.ensemble_models} LSTM ensemble models<br>
+                <strong>Timestamp:</strong> ${new Date(data.metadata.timestamp).toLocaleString()}
+            </div></div>`;
+            
+            resultsContainer.innerHTML = html;
+        }
+
+        function showMessage(message, type) {
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function updateButtons() {
+            const addBtn = document.getElementById('add-combination');
+            const scoreBtn = document.getElementById('score-btn');
+            
+            addBtn.disabled = combinationCount >= maxCombinations;
+            addBtn.textContent = combinationCount >= maxCombinations ? 
+                'Maximum combinations reached' : 
+                `➕ Add Combination (${maxCombinations - combinationCount} remaining)`;
+            
+            scoreBtn.disabled = combinationCount === 0;
+        }
+
+        // Initialize with one combination
+        window.onload = function() {
+            addCombination();
+        };
+    </script>
+</body>
+</html>

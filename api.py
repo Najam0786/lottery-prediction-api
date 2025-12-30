@@ -4,6 +4,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import numpy as np
@@ -390,6 +391,7 @@ async def root():
             "/predict": "Get lottery number predictions (GET)",
             "/user/predict": "User-facing predictions (POST) - for mobile/web apps",
             "/user/score-combinations": "Score user combinations with explanations (POST) - NEW!",
+            "/test-ui": "Interactive test interface for combination scoring - NEW!",
             "/health": "Health check",
             "/admin/retrain": "Trigger data refresh (POST)",
             "/docs": "Interactive API documentation (Swagger UI)"
@@ -707,6 +709,22 @@ async def score_user_combinations(body: CombinationScoreRequest):
         raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
 
 print("✓ Combination scoring endpoint defined")
+
+@app.get("/test-ui")
+async def test_ui():
+    """Serve the test UI page for easy combination scoring"""
+    try:
+        with open("test_ui.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return Response(content=html_content, media_type="text/html")
+    except FileNotFoundError:
+        return Response(
+            content="<h1>Test UI not found</h1><p>Please ensure test_ui.html exists in the same directory as api.py</p>", 
+            media_type="text/html",
+            status_code=404
+        )
+
+print("✓ Test UI endpoint defined")
 
 # Run the server
 if __name__ == "__main__":
