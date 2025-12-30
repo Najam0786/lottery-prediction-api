@@ -689,14 +689,14 @@ async def score_user_combinations(body: CombinationScoreRequest):
                 "combinations_scored": len(body.combinations)
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         print(f"Combination scoring error: {e}")
         raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
 
-print("✓ Combination scoring endpoint defined")
+print(" Combination scoring endpoint defined")
 
 @app.get("/test-ui")
 async def test_ui():
@@ -704,7 +704,8 @@ async def test_ui():
     try:
         with open("test_ui.html", "r", encoding="utf-8") as f:
             html_content = f.read()
-        return Response(content=html_content, media_type="text/html")
+        # Add cache-busting header
+        return Response(content=html_content, media_type="text/html", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     except FileNotFoundError:
         return Response(
             content="<h1>Test UI not found</h1><p>Please ensure test_ui.html exists in the same directory as api.py</p>", 
