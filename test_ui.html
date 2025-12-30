@@ -920,28 +920,65 @@
             // Store user scores globally
             userScores = data.scored_combinations;
             
+            console.log('User scores loaded:', userScores.length);
+            console.log('AI scores available:', window.aiScores ? window.aiScores.length : 0);
+            
             // Try to show comparisons - only if AI scores are available
             showComparisons();
         }
 
         function showComparisons() {
+            console.log('showComparisons called');
+            console.log('userScores:', userScores.length);
+            console.log('window.aiScores:', window.aiScores ? window.aiScores.length : 0);
+            
             // Check if both user and AI scores are available
             if (userScores.length > 0 && window.aiScores && window.aiScores.length > 0) {
+                console.log('Both scores available - showing comparisons');
                 displayUserComparison();
                 displayAIComparison();
             } else {
+                console.log('AI scores not ready, waiting...');
                 // If AI scores not ready, wait a bit and try again
                 setTimeout(() => {
+                    console.log('Retrying comparison check...');
+                    console.log('userScores:', userScores.length);
+                    console.log('window.aiScores:', window.aiScores ? window.aiScores.length : 0);
+                    
                     if (window.aiScores && window.aiScores.length > 0) {
+                        console.log('AI scores now ready - showing comparisons');
                         displayUserComparison();
                         displayAIComparison();
+                    } else {
+                        console.log('AI scores still not available');
+                        // Show a message that AI scores are loading
+                        if (userScores.length > 0) {
+                            const resultsContainer = document.getElementById('results-container');
+                            const loadingHTML = `
+                                <div class="comparison-section">
+                                    <div class="comparison-title">
+                                        <i class="fas fa-info-circle"></i> Loading AI Comparison...
+                                    </div>
+                                    <div class="improvement-tip" style="background: #e3f2fd; border-left-color: #2196f3; color: #1976d2;">
+                                        <i class="fas fa-spinner fa-spin"></i> 
+                                        <strong>Loading AI scores for comparison...</strong> This will only take a moment.
+                                    </div>
+                                </div>
+                            `;
+                            resultsContainer.innerHTML += loadingHTML;
+                        }
                     }
-                }, 1000);
+                }, 2000);
             }
         }
 
         function displayUserComparison() {
+            console.log('displayUserComparison called');
+            console.log('userScores:', userScores.length);
+            console.log('window.aiScores:', window.aiScores ? window.aiScores.length : 0);
+            
             if (userScores.length === 0 || !window.aiScores || window.aiScores.length === 0) {
+                console.log('displayUserComparison: Missing data, returning');
                 return;
             }
 
@@ -955,11 +992,16 @@
                 current.score > best.score ? current : best
             );
 
+            console.log('Best user score:', bestUser.score);
+            console.log('Best AI score:', bestAI.score);
+
             // Calculate score difference
             const scoreDiff = bestAI.score - bestUser.score;
+            console.log('Score difference:', scoreDiff);
             
             // Only show comparison if there's a meaningful difference (at least 10 points)
             if (scoreDiff >= 10) {
+                console.log('Showing improvement comparison');
                 const comparisonHTML = `
                     <div class="comparison-section">
                         <div class="comparison-title">
@@ -1024,7 +1066,9 @@
                 // Insert comparison after results
                 const resultsContainer = document.getElementById('results-container');
                 resultsContainer.innerHTML += comparisonHTML;
+                console.log('User comparison added to DOM');
             } else {
+                console.log('Scores too close, showing encouragement');
                 // Show message when scores are too close
                 const closeScoresHTML = `
                     <div class="comparison-section">
@@ -1041,6 +1085,7 @@
                 
                 const resultsContainer = document.getElementById('results-container');
                 resultsContainer.innerHTML += closeScoresHTML;
+                console.log('User encouragement added to DOM');
             }
         }
 
@@ -1202,6 +1247,7 @@
         }
 
         async function scoreAICombinations(combinations) {
+            console.log('scoreAICombinations called with', combinations.length, 'combinations');
             try {
                 const response = await fetch(`${API_BASE_URL}/user/score-combinations`, {
                     method: 'POST',
@@ -1212,13 +1258,17 @@
                 });
 
                 const data = await response.json();
+                console.log('AI scoring response:', response.ok, data);
                 
                 if (response.ok) {
                     // Store AI scores globally for comparison
                     window.aiScores = data.scored_combinations;
+                    console.log('AI scores stored:', window.aiScores.length);
                     
                     // Try to show comparisons now that AI scores are ready
                     showComparisons();
+                } else {
+                    console.log('AI scoring failed:', data.detail);
                 }
             } catch (error) {
                 console.error('Error scoring AI combinations:', error);
@@ -1229,6 +1279,7 @@
                     rational: "AI-optimized combination with strong statistical backing"
                 }));
                 
+                console.log('Using fallback AI scores:', window.aiScores.length);
                 // Try to show comparisons with simulated scores
                 showComparisons();
             }
