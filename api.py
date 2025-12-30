@@ -242,8 +242,63 @@ class PredictionResponse(BaseModel):
     combinations: List[List[int]]
     metadata: Dict[str, Any]
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "top_numbers": [
+                    {"number": 7, "score": 0.85, "lstm_score": 0.8, "stat_score": 0.9},
+                    {"number": 14, "score": 0.82, "lstm_score": 0.78, "stat_score": 0.86},
+                    {"number": 21, "score": 0.79, "lstm_score": 0.75, "stat_score": 0.83},
+                    {"number": 28, "score": 0.76, "lstm_score": 0.72, "stat_score": 0.8},
+                    {"number": 35, "score": 0.73, "lstm_score": 0.69, "stat_score": 0.77},
+                    {"number": 42, "score": 0.7, "lstm_score": 0.66, "stat_score": 0.74},
+                    {"number": 1, "score": 0.67, "lstm_score": 0.63, "stat_score": 0.71},
+                    {"number": 2, "score": 0.64, "lstm_score": 0.6, "stat_score": 0.68},
+                    {"number": 3, "score": 0.61, "lstm_score": 0.57, "stat_score": 0.65},
+                    {"number": 4, "score": 0.58, "lstm_score": 0.54, "stat_score": 0.62},
+                    {"number": 5, "score": 0.55, "lstm_score": 0.51, "stat_score": 0.59},
+                    {"number": 6, "score": 0.52, "lstm_score": 0.48, "stat_score": 0.56},
+                    {"number": 8, "score": 0.49, "lstm_score": 0.45, "stat_score": 0.53},
+                    {"number": 9, "score": 0.46, "lstm_score": 0.42, "stat_score": 0.5},
+                    {"number": 10, "score": 0.43, "lstm_score": 0.39, "stat_score": 0.47}
+                ],
+                "combinations": [
+                    [7, 14, 21, 28, 35, 42],
+                    [1, 2, 3, 4, 5, 6],
+                    [8, 9, 10, 11, 12, 13],
+                    [15, 16, 17, 18, 19, 20],
+                    [22, 23, 24, 25, 26, 27],
+                    [29, 30, 31, 32, 33, 34],
+                    [36, 37, 38, 39, 40, 41],
+                    [43, 44, 45, 46, 47, 48],
+                    [49, 50, 51, 52, 53, 54],
+                    [55, 56, 57, 58, 59, 60]
+                ],
+                "metadata": {
+                    "model_type": "Bidirectional LSTM + Statistical Ensemble",
+                    "ensemble_models": 5,
+                    "accuracy": "87.76%",
+                    "timestamp": "2025-12-30T12:00:00.000000",
+                    "parameters": {
+                        "top_n": 15,
+                        "n_combinations": 10
+                    }
+                }
+            }
+        }
+
 class CombinationScoreRequest(BaseModel):
     combinations: List[List[int]]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "combinations": [
+                    [7, 14, 21, 28, 35, 42],
+                    [1, 2, 3, 4, 5, 6]
+                ]
+            }
+        }
 
 class CombinationScore(BaseModel):
     combination: List[int]
@@ -251,14 +306,59 @@ class CombinationScore(BaseModel):
     individual_scores: List[float]
     rational: str
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "combination": [7, 14, 21, 28, 35, 42],
+                "score": 78.5,
+                "individual_scores": [82.1, 75.3, 79.8, 76.2, 81.4, 73.9],
+                "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing"
+            }
+        }
+
 class CombinationScoreResponse(BaseModel):
     scored_combinations: List[CombinationScore]
     metadata: Dict[str, Any]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "scored_combinations": [
+                    {
+                        "combination": [7, 14, 21, 28, 35, 42],
+                        "score": 78.5,
+                        "individual_scores": [82.1, 75.3, 79.8, 76.2, 81.4, 73.9],
+                        "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing"
+                    },
+                    {
+                        "combination": [1, 2, 3, 4, 5, 6],
+                        "score": 25.3,
+                        "individual_scores": [45.2, 38.1, 42.7, 35.9, 48.3, 52.1],
+                        "rational": "Weak numbers: 2, 4 (low historical frequency) | Poor number distribution - concentrated in low range | Contains 5 consecutive pairs (statistically rare) | Shows arithmetic pattern (reduces randomness) | Weak combination with multiple statistical issues"
+                    }
+                ],
+                "metadata": {
+                    "model_type": "Bidirectional LSTM + Statistical Ensemble",
+                    "ensemble_models": 5,
+                    "scoring_method": "60% LSTM + 40% Statistical",
+                    "timestamp": "2025-12-30T12:00:00.000000",
+                    "combinations_scored": 2
+                }
+            }
+        }
 
 # Request model for user-facing endpoint
 class UserPredictionRequest(BaseModel):
     top_n: int = 15
     n_combinations: int = 10
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "top_n": 10,
+                "n_combinations": 5
+            }
+        }
 
 print(" Response models defined")
 
