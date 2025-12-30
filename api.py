@@ -304,7 +304,6 @@ class CombinationScoreRequest(BaseModel):
 class CombinationScore(BaseModel):
     combination: List[int]
     score: float
-    individual_scores: List[float]
     rational: str
     
     class Config:
@@ -312,7 +311,6 @@ class CombinationScore(BaseModel):
             "example": {
                 "combination": [1, 2, 3, 4, 5, 6],
                 "score": 50.0,
-                "individual_scores": [40.0, 30.0, 20.0, 10.0, 0.0, 0.0],
                 "rational": "Good numbers"
             }
         }
@@ -328,13 +326,11 @@ class CombinationScoreResponse(BaseModel):
                     {
                         "combination": [1, 2, 3, 4, 5, 6],
                         "score": 50.0,
-                        "individual_scores": [40.0, 30.0, 20.0, 10.0, 0.0, 0.0],
                         "rational": "Good numbers"
                     },
                     {
                         "combination": [7, 8, 9, 10, 11, 12],
                         "score": 40.0,
-                        "individual_scores": [30.0, 20.0, 10.0, 0.0, 0.0, 0.0],
                         "rational": "Fair numbers"
                     }
                 ],
@@ -554,8 +550,6 @@ def score_combination(combination, lstm_scores, stat_scores):
     """Score a single combination and generate rational explanation"""
     try:
         # Get individual scores for each number in the combination
-        individual_lstm = []
-        individual_stat = []
         individual_combined = []
         
         for num in combination:
@@ -563,9 +557,6 @@ def score_combination(combination, lstm_scores, stat_scores):
             lstm_score = float(lstm_scores[idx])
             stat_score = float(stat_scores[idx])
             combined_score = 0.6 * lstm_score + 0.4 * stat_score
-            
-            individual_lstm.append(lstm_score)
-            individual_stat.append(stat_score)
             individual_combined.append(combined_score)
         
         # Calculate overall combination score (average of individual scores)
@@ -627,7 +618,6 @@ def score_combination(combination, lstm_scores, stat_scores):
         
         return {
             'score': round(overall_score, 2),
-            'individual_scores': [round(score * 100, 2) for score in individual_combined],
             'rational': rational
         }
         
@@ -635,7 +625,6 @@ def score_combination(combination, lstm_scores, stat_scores):
         print(f"Error scoring combination {combination}: {e}")
         return {
             'score': 0.0,
-            'individual_scores': [0.0] * len(combination),
             'rational': f"Error scoring combination: {str(e)}"
         }
 
@@ -687,7 +676,6 @@ async def score_user_combinations(body: CombinationScoreRequest):
             scored_combinations.append(CombinationScore(
                 combination=combo,
                 score=score_result['score'],
-                individual_scores=score_result['individual_scores'],
                 rational=score_result['rational']
             ))
         
