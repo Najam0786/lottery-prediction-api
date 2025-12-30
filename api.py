@@ -242,6 +242,19 @@ class PredictionResponse(BaseModel):
     combinations: List[List[int]]
     metadata: Dict[str, Any]
 
+class CombinationScoreRequest(BaseModel):
+    combinations: List[List[int]]
+
+class CombinationScore(BaseModel):
+    combination: List[int]
+    score: float
+    individual_scores: List[float]
+    rational: str
+
+class CombinationScoreResponse(BaseModel):
+    scored_combinations: List[CombinationScore]
+    metadata: Dict[str, Any]
+
 # Request model for user-facing endpoint
 class UserPredictionRequest(BaseModel):
     top_n: int = 15
@@ -276,6 +289,7 @@ async def root():
         "endpoints": {
             "/predict": "Get lottery number predictions (GET)",
             "/user/predict": "User-facing predictions (POST) - for mobile/web apps",
+            "/user/score-combinations": "Score user combinations with explanations (POST) - NEW!",
             "/health": "Health check",
             "/admin/retrain": "Trigger data refresh (POST)",
             "/docs": "Interactive API documentation (Swagger UI)"
@@ -433,6 +447,166 @@ async def user_predict(body: UserPredictionRequest):
     return await predict_lottery(top_n=body.top_n, n_combinations=body.n_combinations)
 
 print(" User endpoint defined")
+
+def score_combination(combination, lstm_scores, stat_scores):
+    """Score a single combination and generate rational explanation"""
+    try:
+        # Get individual scores for each number in the combination
+        individual_lstm = []
+        individual_stat = []
+        individual_combined = []
+        
+        for num in combination:
+            idx = num - 1  # Convert to 0-based index
+            lstm_score = float(lstm_scores[idx])
+            stat_score = float(stat_scores[idx])
+            combined_score = 0.6 * lstm_score + 0.4 * stat_score
+            
+            individual_lstm.append(lstm_score)
+            individual_stat.append(stat_score)
+            individual_combined.append(combined_score)
+        
+        # Calculate overall combination score (average of individual scores)
+        overall_score = np.mean(individual_combined) * 100  # Scale to 0-100
+        
+        # Generate rational explanation
+        rational_parts = []
+        
+        # Analyze individual number strengths
+        strong_numbers = [f"{num}" for num, score in zip(combination, individual_combined) if score > 0.02]
+        weak_numbers = [f"{num}" for num, score in zip(combination, individual_combined) if score < 0.01]
+        
+        if strong_numbers:
+            rational_parts.append(f"Strong numbers: {', '.join(strong_numbers)} (high LSTM/statistical confidence)")
+        if weak_numbers:
+            rational_parts.append(f"Weak numbers: {', '.join(weak_numbers)} (low historical frequency)")
+        
+        # Analyze number distribution
+        sorted_combo = sorted(combination)
+        low_numbers = [num for num in sorted_combo if num <= 16]
+        mid_numbers = [num for num in sorted_combo if 17 <= num <= 32]
+        high_numbers = [num for num in sorted_combo if num >= 33]
+        
+        distribution_balanced = len(low_numbers) >= 1 and len(mid_numbers) >= 1 and len(high_numbers) >= 1
+        if distribution_balanced:
+            rational_parts.append("Good number distribution across low/mid/high ranges")
+        else:
+            rational_parts.append("Poor number distribution - concentrated in specific ranges")
+        
+        # Check for consecutive numbers
+        consecutive_count = 0
+        for i in range(len(sorted_combo) - 1):
+            if sorted_combo[i + 1] - sorted_combo[i] == 1:
+                consecutive_count += 1
+        
+        if consecutive_count >= 2:
+            rational_parts.append(f"Contains {consecutive_count} consecutive pairs (statistically rare)")
+        elif consecutive_count == 1:
+            rational_parts.append("Contains one consecutive pair (moderately rare)")
+        
+        # Check for arithmetic patterns
+        differences = [sorted_combo[i + 1] - sorted_combo[i] for i in range(len(sorted_combo) - 1)]
+        if len(set(differences)) <= 2:  # Simple arithmetic pattern
+            rational_parts.append("Shows arithmetic pattern (reduces randomness)")
+        
+        # Overall assessment
+        if overall_score >= 70:
+            assessment = "Excellent combination with strong statistical backing"
+        elif overall_score >= 50:
+            assessment = "Good combination with moderate statistical support"
+        elif overall_score >= 30:
+            assessment = "Fair combination with some statistical weaknesses"
+        else:
+            assessment = "Weak combination with multiple statistical issues"
+        
+        rational_parts.append(assessment)
+        
+        rational = " | ".join(rational_parts)
+        
+        return {
+            'score': round(overall_score, 2),
+            'individual_scores': [round(score * 100, 2) for score in individual_combined],
+            'rational': rational
+        }
+        
+    except Exception as e:
+        print(f"Error scoring combination {combination}: {e}")
+        return {
+            'score': 0.0,
+            'individual_scores': [0.0] * len(combination),
+            'rational': f"Error scoring combination: {str(e)}"
+        }
+
+@app.post("/user/score-combinations", response_model=CombinationScoreResponse)
+async def score_user_combinations(body: CombinationScoreRequest):
+    """
+    Score user-provided lottery combinations with rational explanations.
+    
+    Parameters:
+    - combinations: List of lottery combinations (each with 6 numbers)
+    """
+    try:
+        # Check if models are loaded
+        if not ensemble_models:
+            raise HTTPException(status_code=503, detail="Models not loaded. Please try again later.")
+        
+        if binary_dataset is None:
+            raise HTTPException(status_code=503, detail="Data not loaded. Please try again later.")
+        
+        # Validate input
+        if not body.combinations:
+            raise HTTPException(status_code=400, detail="At least one combination must be provided")
+        
+        for combo in body.combinations:
+            if len(combo) != 6:
+                raise HTTPException(status_code=400, detail="Each combination must contain exactly 6 numbers")
+            if any(num < 1 or num > 49 for num in combo):
+                raise HTTPException(status_code=400, detail="Numbers must be between 1 and 49")
+            if len(set(combo)) != 6:
+                raise HTTPException(status_code=400, detail="Numbers in each combination must be unique")
+        
+        # Get current model scores
+        recent_draws = binary_dataset[-WINDOW_LENGTH:].reshape(1, WINDOW_LENGTH, LOTTERY_SIZE)
+        
+        # Get LSTM ensemble predictions
+        lstm_preds = []
+        for model in ensemble_models:
+            pred = model.predict(recent_draws, verbose=0)
+            lstm_preds.append(pred)
+        ensemble_pred = np.mean(lstm_preds, axis=0)[0]
+        
+        # Get statistical scores
+        stat_scores = calculate_frequency_scores(binary_dataset, recent_window=100)
+        
+        # Score each combination
+        scored_combinations = []
+        for combo in body.combinations:
+            score_result = score_combination(combo, ensemble_pred, stat_scores)
+            scored_combinations.append(CombinationScore(
+                combination=combo,
+                score=score_result['score'],
+                individual_scores=score_result['individual_scores'],
+                rational=score_result['rational']
+            ))
+        
+        return CombinationScoreResponse(
+            scored_combinations=scored_combinations,
+            metadata={
+                "model_type": "Bidirectional LSTM + Statistical Ensemble",
+                "ensemble_models": len(ensemble_models),
+                "scoring_method": "60% LSTM + 40% Statistical",
+                "timestamp": datetime.now().isoformat(),
+                "combinations_scored": len(body.combinations)
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Combination scoring error: {e}")
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
+
+print("✓ Combination scoring endpoint defined")
 
 # Run the server
 if __name__ == "__main__":

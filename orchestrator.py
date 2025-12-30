@@ -8,6 +8,9 @@ from datetime import datetime
 DATA_API_BASE_URL = "https://lotto-api-production-a6f3.up.railway.app"
 MODEL_API_BASE_URL = "https://web-production-09cd3.up.railway.app"
 
+# Local data file (using Railway subscription ended)
+LOCAL_DATA_FILE = "local_lottery_data.json"
+
 # How often to check for new data (in minutes)
 CHECK_INTERVAL_MINUTES = 1440  # Every 24 hours (once per day)
 
@@ -36,17 +39,22 @@ def save_last_processed_date(date_str):
 
 def fetch_new_draws():
     """
-    Call the Data API to get recent draws and filter for new ones.
+    Load recent draws from local data file.
     Returns list of new draws (newer than last processed).
     """
-    print(f"[{datetime.now().isoformat()}] Checking Data API for new draws...")
+    print(f"[{datetime.now().isoformat()}] Loading draws from local data file...")
     
     try:
-        response = requests.get(f"{DATA_API_BASE_URL}/sorteos/recientes", timeout=30)
-        response.raise_for_status()
-        draws = response.json()
+        if not os.path.exists(LOCAL_DATA_FILE):
+            print(f"Local data file {LOCAL_DATA_FILE} not found!")
+            return []
+        
+        with open(LOCAL_DATA_FILE, "r") as f:
+            data = json.load(f)
+            draws = data.get("draws", [])
         
         if not draws:
+            print("No draws found in local data file")
             return []
         
         # Get last processed date
@@ -70,8 +78,8 @@ def fetch_new_draws():
         
         return new_draws
         
-    except requests.RequestException as e:
-        print(f"Error fetching draws from Data API: {e}")
+    except Exception as e:
+        print(f"Error loading local data: {e}")
         return []
 
 def trigger_retrain():
