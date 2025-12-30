@@ -916,10 +916,16 @@
             });
 
             resultsContainer.innerHTML = html;
+            
+            // Add comparison section to user panel
+            displayUserComparison();
+            
+            // Update AI panel with comparison
+            displayAIComparison();
         }
 
-        function displayComparison() {
-            if (userScores.length === 0 || aiCombinations.length === 0) {
+        function displayUserComparison() {
+            if (userScores.length === 0 || !window.aiScores || window.aiScores.length === 0) {
                 return;
             }
 
@@ -928,88 +934,199 @@
                 current.score > best.score ? current : best
             );
 
-            // Get AI combinations with actual scores from the API
-            let aiWithScores = [];
-            if (window.aiScores && window.aiScores.length > 0) {
-                aiWithScores = window.aiScores;
-            } else {
-                // Fallback: simulate scores if API scores not available
-                aiWithScores = aiCombinations.slice(0, 3).map((combo, index) => ({
-                    combination: combo,
-                    score: 75 + Math.random() * 20, // Simulate AI scores between 75-95
-                    rational: "AI-optimized combination with strong statistical backing"
-                }));
-            }
-
-            const bestAI = aiWithScores.reduce((best, current) => 
+            // Find best AI combination
+            const bestAI = window.aiScores.reduce((best, current) => 
                 current.score > best.score ? current : best
             );
 
-            // Create comparison HTML
-            const comparisonHTML = `
-                <div class="comparison-section">
-                    <div class="comparison-title">
-                        <i class="fas fa-balance-scale"></i> Score Comparison
-                    </div>
-                    <div class="comparison-cards">
-                        <div class="comparison-card">
-                            <div class="comparison-header">
-                                <div class="comparison-label">Your Best</div>
-                                <div class="comparison-badge badge-user">USER</div>
+            // Calculate score difference
+            const scoreDiff = bestAI.score - bestUser.score;
+            
+            // Only show comparison if there's a meaningful difference (at least 10 points)
+            if (scoreDiff >= 10) {
+                const comparisonHTML = `
+                    <div class="comparison-section">
+                        <div class="comparison-title">
+                            <i class="fas fa-balance-scale"></i> Your Best vs AI Best
+                        </div>
+                        <div class="comparison-cards">
+                            <div class="comparison-card">
+                                <div class="comparison-header">
+                                    <div class="comparison-label">Your Best</div>
+                                    <div class="comparison-badge badge-user">USER</div>
+                                </div>
+                                <div class="comparison-combination">
+                                    ${bestUser.combination.map(num => 
+                                        `<div class="comparison-number">${num}</div>`
+                                    ).join('')}
+                                </div>
+                                <div class="comparison-score">
+                                    <div class="score-value">${bestUser.score.toFixed(1)}/100</div>
+                                    <div class="score-stars">${generateStars(bestUser.score)}</div>
+                                </div>
+                                <div class="score-bar">
+                                    <div class="score-fill ${getScoreClass(bestUser.score)}" 
+                                         style="width: ${bestUser.score}%"></div>
+                                </div>
+                                <div class="comparison-insights">
+                                    ${bestUser.rational}
+                                </div>
                             </div>
-                            <div class="comparison-combination">
-                                ${bestUser.combination.map(num => 
-                                    `<div class="comparison-number">${num}</div>`
-                                ).join('')}
-                            </div>
-                            <div class="comparison-score">
-                                <div class="score-value">${bestUser.score.toFixed(1)}/100</div>
-                                <div class="score-stars">${generateStars(bestUser.score)}</div>
-                            </div>
-                            <div class="score-bar">
-                                <div class="score-fill ${getScoreClass(bestUser.score)}" 
-                                     style="width: ${bestUser.score}%"></div>
-                            </div>
-                            <div class="comparison-insights">
-                                ${bestUser.rational}
+                            
+                            <div class="comparison-card ai-best">
+                                <div class="comparison-header">
+                                    <div class="comparison-label">AI Best</div>
+                                    <div class="comparison-badge badge-ai">AI</div>
+                                </div>
+                                <div class="comparison-combination">
+                                    ${bestAI.combination.map(num => 
+                                        `<div class="comparison-number">${num}</div>`
+                                    ).join('')}
+                                </div>
+                                <div class="comparison-score">
+                                    <div class="score-value">${bestAI.score.toFixed(1)}/100</div>
+                                    <div class="score-stars">${generateStars(bestAI.score)}</div>
+                                </div>
+                                <div class="score-bar">
+                                    <div class="score-fill ${getScoreClass(bestAI.score)}" 
+                                         style="width: ${bestAI.score}%"></div>
+                                </div>
+                                <div class="comparison-insights">
+                                    ${bestAI.rational}
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="comparison-card ai-best">
-                            <div class="comparison-header">
-                                <div class="comparison-label">AI Best</div>
-                                <div class="comparison-badge badge-ai">AI</div>
-                            </div>
-                            <div class="comparison-combination">
-                                ${bestAI.combination.map(num => 
-                                    `<div class="comparison-number">${num}</div>`
-                                ).join('')}
-                            </div>
-                            <div class="comparison-score">
-                                <div class="score-value">${bestAI.score.toFixed(1)}/100</div>
-                                <div class="score-stars">${generateStars(bestAI.score)}</div>
-                            </div>
-                            <div class="score-bar">
-                                <div class="score-fill ${getScoreClass(bestAI.score)}" 
-                                     style="width: ${bestAI.score}%"></div>
-                            </div>
-                            <div class="comparison-insights">
-                                ${bestAI.rational}
-                            </div>
+                        <div class="improvement-tip">
+                            <i class="fas fa-lightbulb"></i> 
+                            <strong>Improvement Opportunity:</strong> AI score is ${scoreDiff.toFixed(1)} points higher. 
+                            Consider using more balanced number distribution and avoid consecutive patterns.
                         </div>
                     </div>
-                    
-                    <div class="improvement-tip">
-                        <i class="fas fa-lightbulb"></i> 
-                        <strong>Improvement Tip:</strong> Your score is ${(bestAI.score - bestUser.score).toFixed(1)} points lower than the AI best. 
-                        Try using more balanced number distribution and avoid consecutive numbers for better scores.
-                    </div>
-                </div>
-            `;
+                `;
 
-            // Insert comparison after results
-            const resultsContainer = document.getElementById('results-container');
-            resultsContainer.innerHTML += comparisonHTML;
+                // Insert comparison after results
+                const resultsContainer = document.getElementById('results-container');
+                resultsContainer.innerHTML += comparisonHTML;
+            } else {
+                // Show message when scores are too close
+                const closeScoresHTML = `
+                    <div class="comparison-section">
+                        <div class="comparison-title">
+                            <i class="fas fa-info-circle"></i> Score Analysis
+                        </div>
+                        <div class="improvement-tip" style="background: #fff3cd; border-left-color: #ffc107; color: #856404;">
+                            <i class="fas fa-thumbs-up"></i> 
+                            <strong>Great Job!</strong> Your scores are very close to AI predictions (${bestUser.score.toFixed(1)} vs ${bestAI.score.toFixed(1)}). 
+                            Your number selection strategy is working well! Try different number patterns for even better results.
+                        </div>
+                    </div>
+                `;
+                
+                const resultsContainer = document.getElementById('results-container');
+                resultsContainer.innerHTML += closeScoresHTML;
+            }
+        }
+
+        function displayAIComparison() {
+            if (!window.aiScores || window.aiScores.length === 0 || userScores.length === 0) {
+                return;
+            }
+
+            // Find best AI and user combinations
+            const bestAI = window.aiScores.reduce((best, current) => 
+                current.score > best.score ? current : best
+            );
+            const bestUser = userScores.reduce((best, current) => 
+                current.score > best.score ? current : best
+            );
+
+            const scoreDiff = bestAI.score - bestUser.score;
+            
+            // Get AI predictions container
+            const aiContainer = document.querySelector('.panel-content .predictions-section:last-of-type');
+            
+            if (scoreDiff >= 10) {
+                // Show meaningful comparison
+                const comparisonHTML = `
+                    <div class="comparison-section">
+                        <div class="comparison-title">
+                            <i class="fas fa-chart-line"></i> AI Performance vs Your Best
+                        </div>
+                        <div class="comparison-cards">
+                            <div class="comparison-card ai-best">
+                                <div class="comparison-header">
+                                    <div class="comparison-label">AI Best</div>
+                                    <div class="comparison-badge badge-ai">AI</div>
+                                </div>
+                                <div class="comparison-combination">
+                                    ${bestAI.combination.map(num => 
+                                        `<div class="comparison-number">${num}</div>`
+                                    ).join('')}
+                                </div>
+                                <div class="comparison-score">
+                                    <div class="score-value">${bestAI.score.toFixed(1)}/100</div>
+                                    <div class="score-stars">${generateStars(bestAI.score)}</div>
+                                </div>
+                                <div class="score-bar">
+                                    <div class="score-fill ${getScoreClass(bestAI.score)}" 
+                                         style="width: ${bestAI.score}%"></div>
+                                </div>
+                                <div class="comparison-insights">
+                                    ${bestAI.rational}
+                                </div>
+                            </div>
+                            
+                            <div class="comparison-card">
+                                <div class="comparison-header">
+                                    <div class="comparison-label">Your Best</div>
+                                    <div class="comparison-badge badge-user">USER</div>
+                                </div>
+                                <div class="comparison-combination">
+                                    ${bestUser.combination.map(num => 
+                                        `<div class="comparison-number">${num}</div>`
+                                    ).join('')}
+                                </div>
+                                <div class="comparison-score">
+                                    <div class="score-value">${bestUser.score.toFixed(1)}/100</div>
+                                    <div class="score-stars">${generateStars(bestUser.score)}</div>
+                                </div>
+                                <div class="score-bar">
+                                    <div class="score-fill ${getScoreClass(bestUser.score)}" 
+                                         style="width: ${bestUser.score}%"></div>
+                                </div>
+                                <div class="comparison-insights">
+                                    ${bestUser.rational}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="improvement-tip">
+                            <i class="fas fa-robot"></i> 
+                            <strong>AI Advantage:</strong> ${scoreDiff.toFixed(1)} points higher score with optimized number patterns.
+                            Consider AI's approach for future selections.
+                        </div>
+                    </div>
+                `;
+                
+                aiContainer.insertAdjacentHTML('afterend', comparisonHTML);
+            } else {
+                // Show encouragement message
+                const encouragementHTML = `
+                    <div class="comparison-section">
+                        <div class="comparison-title">
+                            <i class="fas fa-trophy"></i> Performance Analysis
+                        </div>
+                        <div class="improvement-tip" style="background: #d4edda; border-left-color: #28a745; color: #155724;">
+                            <i class="fas fa-star"></i> 
+                            <strong>Excellent Performance!</strong> Your scores match AI quality (${bestUser.score.toFixed(1)} vs ${bestAI.score.toFixed(1)}). 
+                            You're selecting numbers like a pro! Keep up the great work.
+                        </div>
+                    </div>
+                `;
+                
+                aiContainer.insertAdjacentHTML('afterend', encouragementHTML);
+            }
         }
 
         function generateStars(score) {
