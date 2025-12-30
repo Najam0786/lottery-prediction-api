@@ -917,11 +917,27 @@
 
             resultsContainer.innerHTML = html;
             
-            // Add comparison section to user panel
-            displayUserComparison();
+            // Store user scores globally
+            userScores = data.scored_combinations;
             
-            // Update AI panel with comparison
-            displayAIComparison();
+            // Try to show comparisons - only if AI scores are available
+            showComparisons();
+        }
+
+        function showComparisons() {
+            // Check if both user and AI scores are available
+            if (userScores.length > 0 && window.aiScores && window.aiScores.length > 0) {
+                displayUserComparison();
+                displayAIComparison();
+            } else {
+                // If AI scores not ready, wait a bit and try again
+                setTimeout(() => {
+                    if (window.aiScores && window.aiScores.length > 0) {
+                        displayUserComparison();
+                        displayAIComparison();
+                    }
+                }, 1000);
+            }
         }
 
         function displayUserComparison() {
@@ -1043,8 +1059,15 @@
 
             const scoreDiff = bestAI.score - bestUser.score;
             
-            // Get AI predictions container
-            const aiContainer = document.querySelector('.panel-content .predictions-section:last-of-type');
+            // Get the right panel's content area (AI panel)
+            const rightPanel = document.querySelectorAll('.panel')[1];
+            const panelContent = rightPanel.querySelector('.panel-content');
+            
+            // Remove any existing comparison section first
+            const existingComparison = panelContent.querySelector('.comparison-section');
+            if (existingComparison) {
+                existingComparison.remove();
+            }
             
             if (scoreDiff >= 10) {
                 // Show meaningful comparison
@@ -1109,7 +1132,7 @@
                     </div>
                 `;
                 
-                aiContainer.insertAdjacentHTML('afterend', comparisonHTML);
+                panelContent.insertAdjacentHTML('beforeend', comparisonHTML);
             } else {
                 // Show encouragement message
                 const encouragementHTML = `
@@ -1125,7 +1148,7 @@
                     </div>
                 `;
                 
-                aiContainer.insertAdjacentHTML('afterend', encouragementHTML);
+                panelContent.insertAdjacentHTML('beforeend', encouragementHTML);
             }
         }
 
@@ -1193,6 +1216,9 @@
                 if (response.ok) {
                     // Store AI scores globally for comparison
                     window.aiScores = data.scored_combinations;
+                    
+                    // Try to show comparisons now that AI scores are ready
+                    showComparisons();
                 }
             } catch (error) {
                 console.error('Error scoring AI combinations:', error);
@@ -1202,6 +1228,9 @@
                     score: 75 + Math.random() * 20, // Simulate AI scores between 75-95
                     rational: "AI-optimized combination with strong statistical backing"
                 }));
+                
+                // Try to show comparisons with simulated scores
+                showComparisons();
             }
         }
 
