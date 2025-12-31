@@ -1178,6 +1178,7 @@
             scores.forEach((result, index) => {
                 const scoreClass = result.score >= 70 ? 'high-score' : 
                                  result.score >= 50 ? 'medium-score' : 'low-score';
+                const explanation = result.plain_explanation || result.rational;
                 
                 // Track best score
                 if (typeof result.score === 'number' && result.score > bestScore) {
@@ -1194,7 +1195,7 @@
                             <div class="score-value" data-score="${result.score}">0.0/100</div>
                             <div class="score-stars">${generateStars(result.score)}</div>
                         </div>
-                        <div class="score-rational">${result.rational}</div>
+                        <div class="score-rational">${explanation}</div>
                     </div>
                 `;
             });
@@ -1224,6 +1225,7 @@
             topScores.forEach((result, index) => {
                 const scoreClass = result.score >= 70 ? 'high-score' : 
                                  result.score >= 50 ? 'medium-score' : 'low-score';
+                const explanation = result.plain_explanation || result.rational;
 
                 html += `
                     <div class="score-card ${scoreClass}">
@@ -1234,7 +1236,7 @@
                             <div class="score-value" data-score="${result.score}">0.0/100</div>
                             <div class="score-stars">${generateStars(result.score)}</div>
                         </div>
-                        <div class="score-rational">${result.rational}</div>
+                        <div class="score-rational">${explanation}</div>
                         <div class="ai-insights" onclick="toggleInsights(${index})">
                             <i class="fas fa-lightbulb"></i> Why this combination?
                             <div class="insights-content" id="insights-${index}">
@@ -1338,6 +1340,8 @@
             // Scores are kept sorted descending; best is always first.
             const bestUser = userScores[0];
             const bestAI = aiScores[0];
+            const bestUserExplanation = bestUser.plain_explanation || bestUser.rational;
+            const bestAIExplanation = bestAI.plain_explanation || bestAI.rational;
 
             const comparisonSection = document.getElementById('comparison-section');
             const comparisonCards = document.getElementById('comparison-cards');
@@ -1366,7 +1370,7 @@
                         <div class="score-fill ${getScoreClass(bestUser.score)}" 
                              style="width: ${bestUser.score}%"></div>
                     </div>
-                    <div class="score-rational">${bestUser.rational}</div>
+                    <div class="score-rational">${bestUserExplanation}</div>
                 </div>
                 
                 <div class="comparison-card ${!userWins ? 'winner' : ''}">
@@ -1387,7 +1391,7 @@
                         <div class="score-fill ${getScoreClass(bestAI.score)}" 
                              style="width: ${bestAI.score}%"></div>
                     </div>
-                    <div class="score-rational">${bestAI.rational}</div>
+                    <div class="score-rational">${bestAIExplanation}</div>
                 </div>
             `;
 

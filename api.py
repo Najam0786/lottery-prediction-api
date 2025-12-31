@@ -384,13 +384,15 @@ class CombinationScore(BaseModel):
     combination: List[int]
     score: float
     rational: str
+    plain_explanation: str
     
     class Config:
         json_schema_extra = {
             "example": {
                 "combination": [7, 14, 21, 28, 35, 42],
                 "score": 65.5,
-                "rational": "Strong numbers: 7, 14, 21 | Good distribution | No consecutive pairs | Fair combination"
+                "rational": "Strong numbers: 7, 14, 21 | Good distribution | No consecutive pairs | Fair combination",
+                "plain_explanation": "This is a solid pick overall. It includes some stronger numbers and a good spread across low/mid/high ranges. Think of it like diversifying a small portfolio rather than betting everything on one area."
             }
         }
 
@@ -405,12 +407,14 @@ class CombinationScoreResponse(BaseModel):
                     {
                         "combination": [7, 14, 21, 28, 35, 42],
                         "score": 65.5,
-                        "rational": "Strong numbers: 7, 14, 21 | Good distribution | No consecutive pairs | Fair combination"
+                        "rational": "Strong numbers: 7, 14, 21 | Good distribution | No consecutive pairs | Fair combination",
+                        "plain_explanation": "This is a solid pick overall. It includes some stronger numbers and a good spread across low/mid/high ranges. Think of it like diversifying a small portfolio rather than betting everything on one area."
                     },
                     {
                         "combination": [1, 8, 15, 22, 29, 36],
                         "score": 45.2,
-                        "rational": "Weak numbers: 1, 8 | Poor distribution | Contains consecutive pairs | Weak combination"
+                        "rational": "Weak numbers: 1, 8 | Poor distribution | Contains consecutive pairs | Weak combination",
+                        "plain_explanation": "This combination is weak compared to typical strong picks. Think of it like stacking too many eggs in one basket: risk is concentrated and confidence is low."
                     }
                 ],
                 "metadata": {
@@ -718,6 +722,55 @@ def score_combination(combination, lstm_scores, stat_scores):
             'rational': f"Error scoring combination: {str(e)}"
         }
 
+def simplify_rational_to_plain_explanation(score: float, rational: str) -> str:
+    score = float(score or 0.0)
+    rational = (rational or "").strip()
+    parts = [p.strip() for p in rational.split("|") if p.strip()]
+
+    if score >= 70:
+        headline = "This looks like a strong combination."
+        analogy = "Think of it like a well-balanced meal: you’re covering different ranges and keeping good variety."
+    elif score >= 50:
+        headline = "This is a decent combination with some strengths."
+        analogy = "Think of it like a balanced plan: not perfect, but it avoids most common pitfalls."
+    elif score >= 30:
+        headline = "This combination is average and could be improved."
+        analogy = "Think of it like a mixed basket: there are some good picks, but also some weak spots."
+    else:
+        headline = "This combination is weak compared to typical strong picks."
+        analogy = "Think of it like stacking too many eggs in one basket: risk is concentrated and confidence is low."
+
+    bullets = []
+    for p in parts:
+        lp = p.lower()
+        if lp.startswith("strong numbers"):
+            bullets.append("It contains numbers that our model rates higher based on recent patterns.")
+        elif lp.startswith("weak numbers"):
+            bullets.append("It includes some numbers the model rates lower, which can drag down the score.")
+        elif "good number distribution" in lp:
+            bullets.append("The numbers are spread across low/mid/high ranges, which is generally preferred.")
+        elif "poor number distribution" in lp:
+            bullets.append("Many numbers fall in the same range, reducing variety.")
+        elif "consecutive" in lp:
+            bullets.append("It contains consecutive numbers; that pattern is less common historically.")
+        elif "arithmetic pattern" in lp:
+            bullets.append("It follows a simple pattern, which reduces randomness and can be less robust.")
+        elif "excellent" in lp:
+            bullets.append("Overall signals are strong across the selected numbers.")
+        elif "good combination" in lp:
+            bullets.append("Overall signals are moderate to good.")
+        elif "fair combination" in lp:
+            bullets.append("Some signals are good, but there are noticeable weaknesses.")
+        elif "weak combination" in lp:
+            bullets.append("Multiple factors reduce confidence for this pick.")
+
+    bullets = bullets[:4]
+    if bullets:
+        detail = " ".join(bullets)
+        return f"{headline} {detail} {analogy}"
+
+    return f"{headline} {analogy}"
+
 @app.post("/user/score-combinations", response_model=CombinationScoreResponse)
 async def score_user_combinations(body: CombinationScoreRequest):
     """
@@ -769,10 +822,12 @@ async def score_user_combinations(body: CombinationScoreRequest):
         scored_combinations = []
         for combo in body.combinations:
             score_result = score_combination(combo, ensemble_pred, stat_scores)
+            plain = simplify_rational_to_plain_explanation(score_result.get('score', 0.0), score_result.get('rational', ''))
             scored_combinations.append(CombinationScore(
                 combination=combo,
                 score=score_result['score'],
-                rational=score_result['rational']
+                rational=score_result['rational'],
+                plain_explanation=plain
             ))
         
         return CombinationScoreResponse(
