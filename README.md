@@ -95,7 +95,7 @@ The project leverages an **ensemble of 5 Bidirectional LSTM neural networks** tr
 | **Base URL** | GET | [`https://web-production-09cd3.up.railway.app`](https://web-production-09cd3.up.railway.app) | API Root |
 | **Predictions** | GET | [`/predict`](https://web-production-09cd3.up.railway.app/predict) | Get lottery predictions (query params) |
 | **User Predictions** | POST | [`/user/predict`](https://web-production-09cd3.up.railway.app/docs#/default/user_predict_user_predict_post) | Get predictions (JSON body) - for apps |
-| **Score Combinations** | POST | [`/user/score-combinations`](https://web-production-09cd3.up.railway.app/docs#/default/score_user_combinations_user_score_combinations_post) | Score combinations + rational explanation |
+| **Score Combinations** | POST | [`/user/score-combinations`](https://web-production-09cd3.up.railway.app/docs#/default/score_user_combinations_user_score_combinations_post) | Score combinations + explanations (technical + plain-language) |
 | **Test UI** | GET | [`/test-ui`](https://web-production-09cd3.up.railway.app/test-ui) | Modern dashboard UI (User vs AI + comparison) |
 | **Health Check** | GET | [`/health`](https://web-production-09cd3.up.railway.app/health) | Service status |
 | **Admin Retrain** | POST | [`/admin/retrain`](https://web-production-09cd3.up.railway.app/docs#/default/admin_retrain_admin_retrain_post) | Trigger data refresh |
@@ -195,6 +195,7 @@ The project includes a modern dashboard UI for interactive testing:
 - **Combination scoring**: each card shows a **0–100 score**, star rating, and an explanation
 - **Score comparison**: highlights the best user vs best AI combination and shows a winner message
 - **AI insights**: expandable "Why this combination?" section for AI-generated combinations
+- **User-friendly explanations (Stats Bridge)**: the UI shows a plain-language explanation so non-technical users understand *why* a score is high/low
 
 Live: https://web-production-09cd3.up.railway.app/test-ui
 
@@ -990,7 +991,22 @@ curl -X POST "https://web-production-09cd3.up.railway.app/user/predict" \
 
 ### `POST /user/score-combinations` ⭐ **NEW!**
 
-Score user-provided lottery combinations with detailed rational explanations. Perfect for validating your own number choices!
+Score user-provided lottery combinations with **two layers of explanations**:
+
+- `rational`: a technical, structured explanation (good for developers and power users)
+- `plain_explanation`: a plain-language, end-user explanation (our **"Stats Bridge"**) with a short analogy
+
+Perfect for validating your own number choices in apps and dashboards.
+
+#### Why we added “Stats Bridge” (`plain_explanation`)
+
+In real products, a big problem is **communication debt**: the model may be correct, but users don’t trust it if the reasoning is too technical.
+
+The Stats Bridge layer is designed to:
+
+- **Translate ML/statistics into simple language** for end users
+- **Standardize explanations** (consistent style across the UI, API, and future chatbots)
+- **Make integrations easier** (structured JSON field you can display anywhere)
 
 #### Request Body
 
@@ -1024,14 +1040,14 @@ curl -X POST "https://web-production-09cd3.up.railway.app/user/score-combination
     {
       "combination": [7, 14, 21, 28, 35, 42],
       "score": 78.5,
-      "individual_scores": [82.1, 75.3, 79.8, 76.2, 81.4, 73.9],
-      "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing"
+      "rational": "Strong numbers: 7, 21, 35 (high LSTM/statistical confidence) | Good number distribution across low/mid/high ranges | Excellent combination with strong statistical backing",
+      "plain_explanation": "This looks like a strong combination. It contains numbers that our model rates higher based on recent patterns. The numbers are spread across low/mid/high ranges, which is generally preferred. Think of it like a well-balanced meal: you’re covering different ranges and keeping good variety."
     },
     {
       "combination": [1, 2, 3, 4, 5, 6],
       "score": 25.3,
-      "individual_scores": [45.2, 38.1, 42.7, 35.9, 48.3, 52.1],
-      "rational": "Weak numbers: 2, 4 (low historical frequency) | Poor number distribution - concentrated in low range | Contains 5 consecutive pairs (statistically rare) | Shows arithmetic pattern (reduces randomness) | Weak combination with multiple statistical issues"
+      "rational": "Weak numbers: 2, 4 (low historical frequency) | Poor number distribution - concentrated in low range | Contains 5 consecutive pairs (statistically rare) | Shows arithmetic pattern (reduces randomness) | Weak combination with multiple statistical issues",
+      "plain_explanation": "This combination is weak compared to typical strong picks. It includes some numbers the model rates lower, which can drag down the score. Many numbers fall in the same range, reducing variety. It contains consecutive numbers; that pattern is less common historically. Think of it like stacking too many eggs in one basket: risk is concentrated and confidence is low."
     }
   ],
   "metadata": {
@@ -1062,6 +1078,10 @@ curl -X POST "https://web-production-09cd3.up.railway.app/user/score-combination
 - Detailed breakdown of why each combination scored as it did
 - Identifies strong and weak numbers
 - Provides actionable insights for number selection
+
+🗣️ **Stats Bridge (Plain Explanations)**
+- Converts the technical rationale into a user-friendly summary (`plain_explanation`)
+- Ideal for dashboards, mobile apps, and non-technical users
 
 #### Score Interpretation
 
